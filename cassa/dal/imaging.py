@@ -15,7 +15,7 @@ from PIL import Image
 _PREVIEW_MAX_SIDE = 1024
 
 
-def fits_to_png(fits_bytes: bytes) -> bytes:
+def fits_to_png(fits_bytes: bytes, max_side: int = _PREVIEW_MAX_SIDE) -> bytes:
     with fits.open(io.BytesIO(fits_bytes)) as hdul:
         hdu = next((h for h in hdul if getattr(h, "data", None) is not None), hdul[0])
         data = hdu.data
@@ -38,8 +38,8 @@ def fits_to_png(fits_bytes: bytes) -> bytes:
     img8 = (scaled * 255.0).astype("uint8")
 
     im = Image.fromarray(img8, mode="L")
-    if max(im.size) > _PREVIEW_MAX_SIDE:
-        ratio = _PREVIEW_MAX_SIDE / max(im.size)
+    if max(im.size) > max_side:
+        ratio = max_side / max(im.size)
         im = im.resize((max(1, int(im.width * ratio)), max(1, int(im.height * ratio))))
 
     buf = io.BytesIO()

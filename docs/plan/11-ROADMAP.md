@@ -30,6 +30,11 @@ This de-risks the project and lets IUB build software in parallel with procureme
 - Basic archive browser + **SFTP/FTP download gateway** (SFTPGo) for users.
 - ✅ *Milestone:* operator manually images a target on the EQ6-R + Minicam8; file
   lands in the archive and is downloadable over SFTP/FTP.
+- **Status:** implemented against the **virtual site** — capture → provenance FITS
+  (headers + `CHECKSUM`/SHA-256) → local object store + SQLite index → archive API +
+  browser → HTTPS/SFTP (SFTPGo) download; focuser + filter-wheel manual control.
+  Remaining for real hardware: PHD2 guiding panel, camera cooler/gain/ROI controls,
+  and the on-site EQDIR/`indi_toupbase` bring-up (see checklist above).
 
 ## Phase 2 — Plate solving, calibration & QA (weeks 9–14)
 **Goal:** scientifically useful frames.

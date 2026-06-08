@@ -12,6 +12,8 @@ dependencies = [
     "numpy>=1.26",
     "astropy>=6.0",
     "pillow>=10.2",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.19",
 ]
 
 [build-system]

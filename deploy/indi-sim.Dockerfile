@@ -14,4 +14,6 @@ RUN apt-get update \
 EXPOSE 7624
 
 # -v: verbose; add more simulator drivers here as later phases need them
-CMD ["indiserver", "-v", "indi_simulator_telescope", "indi_simulator_ccd"]
+CMD ["indiserver", "-v", \
+     "indi_simulator_telescope", "indi_simulator_ccd", \
+     "indi_simulator_focus", "indi_simulator_wheel"]

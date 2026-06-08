@@ -1,22 +1,31 @@
-# CASSA — Phase 0
+# CASSA — Phases 0–1
 
-Multi-site telescope/dome control system. **Phase 0** is the foundation + a fully
-**simulated telescope** you can drive by hand from a browser — no real hardware.
+Multi-site telescope/dome control system, built against a fully **simulated
+telescope** you can drive by hand from a browser — no real hardware needed yet.
 
 The full design lives in [`docs/plan/`](docs/plan/README.md). This README is the
-runnable Phase-0 slice.
+runnable slice.
 
-## What works in Phase 0
+## What works
 
+**Phase 0 — foundations & manual control**
 - A pure-Python **async INDI client** (`cassa/dal/indi/protocol.py`) — same code path
   for the simulators and, later, the real EQ6-R (`indi_eqmod`) + ToupTek (`indi_toupbase`).
-- **DAL roles**: `Mount`, `Camera` (`cassa/dal/`).
-- **Site Agent** (`cassa/agent/`) with a resilient INDI connection + camera previews.
-- **Core API** (`cassa/core/`): REST manual control + a WebSocket telemetry stream.
-- **Web console** (`web/`): live RA/Dec, slew/park/abort, expose, and a FITS→PNG preview.
+- **DAL roles**: `Mount`, `Camera`, `Focuser`, `FilterWheel` (`cassa/dal/`).
+- **Site Agent** (`cassa/agent/`) with a resilient INDI connection + live previews.
+- **Core API** + **web console**: live telemetry, slew/park/abort, expose.
 
-> **Milestone:** slew the simulated mount, take an exposure, and see the image +
-> live RA/Dec update in the browser.
+**Phase 1 — imaging pipeline & archive**
+- **Full-frame capture** that authors a provenance-rich **FITS** (OBSID, pointing,
+  time, instrument, filter, focus + FITS `CHECKSUM`/`DATASUM` + SHA-256) — `cassa/agent/fits_writer.py`.
+- **Archive**: local object store + SQLite index (`cassa/core/{storage,db,archive}.py`),
+  auto previews + thumbnails.
+- **Archive API + browser**: search recent frames, view thumbnails, **download FITS**.
+- **Focuser + filter-wheel** manual control; filter recorded into FITS headers.
+- **SFTP/FTP download gateway** (SFTPGo) over the archive for bulk retrieval.
+
+> **Milestone:** capture a target on the (simulated) camera → a provenance FITS lands
+> in the archive → download it over HTTPS or SFTP.
 
 ## Architecture (Phase 0)
 
@@ -74,9 +83,21 @@ curl localhost:8000/api/status
 curl -X POST localhost:8000/api/mount/slew \
   -H 'content-type: application/json' \
   -d '{"ra_hours": 5.59, "dec_deg": -5.39, "track": true}'
-curl -X POST localhost:8000/api/camera/expose \
-  -H 'content-type: application/json' -d '{"seconds": 2}'
-curl localhost:8000/api/camera/last-image.png -o frame.png
+# capture a provenance FITS and archive it
+curl -X POST localhost:8000/api/camera/capture \
+  -H 'content-type: application/json' \
+  -d '{"seconds": 2, "object_name": "M42", "image_type": "LIGHT"}'
+# list the archive, then download a frame's FITS
+curl localhost:8000/api/images?limit=5
+curl -OJ localhost:8000/api/images/<image_id>/fits
+```
+
+## Retrieve images over SFTP/FTP
+```bash
+docker compose -f deploy/docker-compose.yml --profile ftp up -d
+# open http://localhost:8082 (admin / cassa-admin), create an SFTP user whose
+# home maps to /srv/archive, then:
+sftp -P 2022 <user>@localhost      # browse raw/ previews/ thumbs/
 ```
 
 ## Cutover to real hardware (Phase 1)

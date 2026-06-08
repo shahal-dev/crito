@@ -43,6 +43,24 @@ services:
     ports: ["9000:9000", "9001:9001"]
     volumes: ["miniodata:/data"]
 
+  # User-facing SFTP/FTP download gateway over the archive (read-only).
+  #   docker compose -f deploy/docker-compose.yml --profile ftp up -d
+  #   admin UI: http://localhost:8082  (admin / cassa-admin) -> create an SFTP user
+  #   whose home maps to /srv/archive, then: sftp -P 2022 <user>@localhost
+  sftpgo:
+    image: drakkan/sftpgo:latest
+    profiles: ["ftp"]
+    ports:
+      - "2022:2022"   # SFTP
+      - "8082:8080"   # admin web UI
+    environment:
+      SFTPGO_DEFAULT_ADMIN_USERNAME: admin
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: cassa-admin
+    volumes:
+      - "../data/store:/srv/archive:ro"   # the CASSA local object store
+      - "sftpgodata:/var/lib/sftpgo"
+
 volumes:
   pgdata:
   miniodata:
+  sftpgodata:
