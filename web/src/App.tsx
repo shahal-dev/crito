@@ -59,7 +59,11 @@ export default function App() {
     refreshArchive();
     return () => {
       stop = true;
-      ws?.close();
+      if (ws) {
+        ws.onclose = null; // don't trigger a reconnect from the torn-down socket
+        ws.onerror = null;
+        ws.close();
+      }
     };
   }, [refreshArchive]);
 
