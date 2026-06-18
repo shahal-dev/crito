@@ -15,7 +15,9 @@ install:
 	cd web && npm install
 
 backend:
-	uvicorn cassa.core.app:app --reload --host 0.0.0.0 --port 8000
+	# --reload-dir cassa: watch only source, so runtime writes to data/ (bindings.json,
+	# the SQLite archive) don't restart the server and drop the INDI connection.
+	uvicorn cassa.core.app:app --reload --reload-dir cassa --host 0.0.0.0 --port 8000
 
 web:
 	cd web && npm run dev

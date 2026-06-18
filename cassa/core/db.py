@@ -59,6 +59,20 @@ class Image(Base):
         return d
 
 
+class User(Base):
+    __tablename__ = "user"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    role: Mapped[str] = mapped_column(String, default="viewer")  # viewer|observer|operator|admin
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=_utcnow)
+
+    def dict(self) -> dict:
+        return {"id": self.id, "username": self.username, "role": self.role,
+                "created_at": self.created_at.isoformat() if self.created_at else None}
+
+
 class DB:
     def __init__(self, url: str):
         # ensure a parent dir exists for file-based sqlite urls

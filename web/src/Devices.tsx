@@ -1,28 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
-import { getJSON, IndiDevice, post, ROLES, Telemetry } from "./api";
+import { useEffect, useState } from "react";
+import { post, Role, ROLES, ROLE_LABELS, Telemetry } from "./api";
+
+// Common INDI serial baud rates. EQ6-R: 115200 over the mount's built-in USB,
+// 9600 via an EQDIR cable — pick the one that matches your wiring.
+const BAUDS = ["9600", "19200", "38400", "57600", "115200", "230400"];
+const DEFAULT_BAUD = "115200";
 
 export default function Devices({ tel }: { tel: Telemetry | null }) {
-  const [devs, setDevs] = useState<IndiDevice[]>([]);
   const [ports, setPorts] = useState<Record<string, string>>({});
-  const [roleSel, setRoleSel] = useState<Record<string, string>>({});
+  const [bauds, setBauds] = useState<Record<string, string>>({});
+  // per-role chosen device (before binding); falls back to the bound device or
+  // the sole candidate when the user hasn't picked one explicitly.
+  const [pick, setPick] = useState<Partial<Record<Role, string>>>({});
   const [host, setHost] = useState("");
   const [portN, setPortN] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const scan = useCallback(async () => {
-    try {
-      setDevs(await getJSON<IndiDevice[]>("/api/indi/devices"));
-    } catch (e) {
-      setErr(String(e instanceof Error ? e.message : e));
-    }
-  }, []);
-
-  // refresh device list whenever the transport (re)connects
   const connected = tel?.indi_connected;
-  useEffect(() => {
-    if (connected) scan();
-  }, [connected, scan]);
+  // The device inventory streams live over telemetry, so plugging/unplugging is
+  // reflected within a frame — no manual scan needed to notice a dropped device.
+  const devs = tel?.devices ?? [];
 
   // seed the server host/port fields from telemetry once
   useEffect(() => {
@@ -37,7 +35,6 @@ export default function Devices({ tel }: { tel: Telemetry | null }) {
     setBusy(true);
     try {
       await fn();
-      await scan();
     } catch (e) {
       setErr(String(e instanceof Error ? e.message : e));
     } finally {
@@ -45,17 +42,23 @@ export default function Devices({ tel }: { tel: Telemetry | null }) {
     }
   };
 
-  const bind = (d: IndiDevice) => {
-    const role = roleSel[d.device] || d.roles[0];
-    if (!role) {
-      setErr(`pick a role for ${d.device}`);
+  const bindRole = (role: Role, device: string) => {
+    if (!device) {
+      setErr(`pick a device for ${ROLE_LABELS[role]}`);
       return;
     }
-    const params =
-      role === "mount" && d.has_port && ports[d.device]
-        ? { DEVICE_PORT: { PORT: ports[d.device] } }
-        : undefined;
-    run(() => post("/api/devices/bind", { role, device: d.device, params }));
+    const d = devs.find((x) => x.device === device);
+    // For a serial device, apply the port + baud shown in the form before
+    // connecting — using the effective values (what the fields display), so the
+    // user's baud choice takes effect even if they never edited the port box.
+    let params: Record<string, unknown> | undefined;
+    if (d?.has_port) {
+      const port = ports[device] ?? d.port ?? "";
+      const baud = bauds[device] ?? DEFAULT_BAUD;
+      params = { DEVICE_BAUD_RATE: { [baud]: true } };
+      if (port) params.DEVICE_PORT = { PORT: port };
+    }
+    run(() => post("/api/devices/bind", { role, device, params }));
   };
 
   return (
@@ -75,7 +78,7 @@ export default function Devices({ tel }: { tel: Telemetry | null }) {
         <button disabled={busy} onClick={() => run(() => post("/api/indi/server", { host, port: parseInt(portN, 10) }))}>
           Connect server
         </button>
-        <button disabled={busy} onClick={scan}>Scan</button>
+        <button disabled={busy || !connected} onClick={() => run(() => post("/api/indi/rescan"))}>Rescan</button>
         <button disabled={busy || !connected} onClick={() => run(() => post("/api/devices/autodetect"))}>
           Auto-detect &amp; connect all
         </button>
@@ -83,62 +86,112 @@ export default function Devices({ tel }: { tel: Telemetry | null }) {
 
       <table className="devtable">
         <thead>
-          <tr><th>Device</th><th>Roles</th><th>Serial port</th><th>State</th><th></th></tr>
+          <tr><th>Role</th><th>Device</th><th>Serial port</th><th>Baud</th><th>State</th><th></th></tr>
         </thead>
         <tbody>
-          {!devs.length && (
-            <tr><td colSpan={5} className="muted">{connected ? "no devices — click Scan" : "INDI server not connected"}</td></tr>
-          )}
-          {devs.map((d) => (
-            <tr key={d.device}>
-              <td><b>{d.device}</b></td>
-              <td>
-                {d.roles.length > 1 ? (
-                  <select value={roleSel[d.device] || d.roles[0]} onChange={(e) => setRoleSel({ ...roleSel, [d.device]: e.target.value })}>
-                    {d.roles.map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                ) : (
-                  <span className="muted">{d.roles[0] ?? "—"}</span>
-                )}
-              </td>
-              <td>
-                {d.has_port ? (
-                  <input
-                    placeholder="/dev/ttyUSB0"
-                    value={ports[d.device] ?? d.port ?? ""}
-                    onChange={(e) => setPorts({ ...ports, [d.device]: e.target.value })}
-                    style={{ width: 150 }}
-                  />
-                ) : (
-                  <span className="muted">—</span>
-                )}
-              </td>
-              <td>
-                {d.bound_as ? <span className="pill ok">{d.bound_as}</span>
-                  : d.connected ? <span className="pill warn">connected</span>
-                  : <span className="pill idle">idle</span>}
-              </td>
-              <td>
-                {d.bound_as ? (
-                  <button disabled={busy} className="danger" onClick={() => run(() => post("/api/devices/unbind", { role: d.bound_as }))}>
-                    Disconnect
-                  </button>
-                ) : (
-                  <button disabled={busy || !d.roles.length} onClick={() => bind(d)}>Connect</button>
-                )}
-              </td>
-            </tr>
-          ))}
+          {ROLES.map((role) => {
+            // Every discovered device whose interface advertises this role. A
+            // guide camera is just a camera used for guiding, so any device that
+            // can act as a camera is eligible — most cameras only report the CCD
+            // interface bit, not the separate GUIDER one.
+            const candidates = devs.filter(
+              (d) => d.roles.includes(role) || (role === "guide" && d.roles.includes("camera")),
+            );
+            const boundDev = tel?.bindings?.[role] ?? null;
+            const boundEntry = boundDev ? devs.find((d) => d.device === boundDev) : undefined;
+            // While bound, the dropdown is locked to the bound device; otherwise
+            // fall back to an explicit pick, then the sole candidate.
+            const selected =
+              boundDev ?? pick[role] ?? (candidates.length === 1 ? candidates[0].device : "");
+            const selDev = devs.find((d) => d.device === selected);
+
+            // The device this row is about: the bound one if bound, else the pick.
+            const rowDev = boundDev ? boundEntry : selDev;
+            const present = !!rowDev;                                   // on the bus right now
+            const alert = rowDev?.conn_state === "Alert";              // driver flagged an error
+            const isConnected = !!rowDev?.connected && !alert;         // healthy, talking
+
+            // Full role status — every state the row can be in:
+            //   connected   bound + linked + healthy            -> Disconnect
+            //   online      device present, not connected        -> Connect (ready)
+            //   offline     device present but driver Alert       -> Connect (retry)
+            //   unreachable bound but device gone (unplugged)     -> Connect (disabled)
+            //   no device   nothing present for this role         -> Connect (disabled)
+            const status =
+              boundDev && isConnected ? { label: "connected", cls: "ok" }
+              : boundDev && !present ? { label: "unreachable", cls: "bad" }
+              : present && alert ? { label: "offline", cls: "bad" }
+              : present ? { label: "online", cls: "warn" }
+              : { label: "no device", cls: "idle" };
+            return (
+              <tr key={role}>
+                <td><b>{ROLE_LABELS[role]}</b></td>
+                <td>
+                  {candidates.length ? (
+                    <select
+                      value={selected}
+                      disabled={!!boundDev}
+                      onChange={(e) => setPick({ ...pick, [role]: e.target.value })}
+                    >
+                      <option value="">— none —</option>
+                      {candidates.map((d) => (
+                        <option key={d.device} value={d.device}>
+                          {d.device}
+                          {d.bound_as && d.bound_as !== role ? ` (also ${ROLE_LABELS[d.bound_as as Role] ?? d.bound_as})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="muted">{connected ? "no device found" : "—"}</span>
+                  )}
+                </td>
+                <td>
+                  {selDev?.has_port ? (
+                    <input
+                      placeholder="/dev/ttyUSB0"
+                      value={ports[selDev.device] ?? selDev.port ?? ""}
+                      disabled={!!boundDev}
+                      onChange={(e) => setPorts({ ...ports, [selDev.device]: e.target.value })}
+                      style={{ width: 150 }}
+                    />
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
+                <td>
+                  {selDev?.has_port ? (
+                    <select
+                      value={bauds[selDev.device] ?? DEFAULT_BAUD}
+                      disabled={!!boundDev}
+                      onChange={(e) => setBauds({ ...bauds, [selDev.device]: e.target.value })}
+                    >
+                      {BAUDS.map((b) => <option key={b}>{b}</option>)}
+                    </select>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
+                <td>
+                  <span className={`pill ${status.cls}`}>{status.label}</span>
+                </td>
+                <td>
+                  {boundDev && isConnected ? (
+                    // Connected and healthy — the only action is to drop it.
+                    <button disabled={busy} className="danger" onClick={() => run(() => post("/api/devices/unbind", { role }))}>
+                      Disconnect
+                    </button>
+                  ) : (
+                    // Otherwise offer Connect, clickable only when the target
+                    // device is actually present (online/offline) — disabled when
+                    // it's unreachable or there's no device at all.
+                    <button disabled={busy || !present} onClick={() => bindRole(role, selected)}>Connect</button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-
-      <div className="bindsummary">
-        {ROLES.map((r) => (
-          <span key={r} className="pill idle">
-            {r}: <b style={{ color: tel?.bindings?.[r] ? "#b8f0cd" : undefined }}>{tel?.bindings?.[r] ?? "—"}</b>
-          </span>
-        ))}
-      </div>
     </section>
   );
 }

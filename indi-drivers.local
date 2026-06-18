@@ -1,0 +1,16 @@
+# Serial & network INDI drivers — start-indi.sh loads these on top of whatever it
+# auto-detects over USB. List one or more driver binaries (whitespace or newline
+# separated). Lines and trailing text after '#' are ignored.
+#
+# These live here, not in USB auto-detection, because a serial bridge chip
+# (FTDI 0403:6001, CH340 1a86:7523, Prolific 067b:23d3, CP210x 10c4:ea60) reveals
+# the cable, not the instrument behind it. Find your serial gear with:
+#     ls -l /dev/serial/by-id/
+#
+# Examples — uncomment the ones you have:
+indi_eqmod_telescope            # Sky-Watcher EQ6-R (on /dev/ttyUSB0, Prolific cable)
+# indi_lx200generic             # Meade / generic LX200 protocol mounts
+# indi_celestron_gps            # Celestron NexStar
+# indi_nstep_focus              # nStep focuser
+# indi_moonlite_focus           # MoonLite focuser
+# indi_gpsd                     # GPSd time/location source

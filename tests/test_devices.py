@@ -22,7 +22,8 @@ def test_roles_from_interface_bitmask():
     assert _roles_for(8) == ["focuser"]
     assert _roles_for(16) == ["filter"]
     assert _roles_for(2 | 8) == ["camera", "focuser"]
-    assert _roles_for(1 | 4) == ["mount", "camera"]  # telescope + guider
+    assert _roles_for(1 | 4) == ["mount", "guide"]  # telescope + guider
+    assert _roles_for(2 | 16) == ["camera", "filter"]  # QHY camera+filter bundle
 
 
 def test_list_devices_maps_state(tmp_path):
