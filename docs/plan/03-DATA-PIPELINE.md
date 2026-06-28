@@ -34,8 +34,8 @@ standard header** so the frame is self-describing forever:
   `FOCUSPOS`, `ROTATORANGLE`.
 - **Environment:** `AMBTEMP`, `HUMIDITY`, `DEWPOINT`, `PRESSURE`, `WINDSPD`,
   `SKYTEMP`, `SQM`, `SEEING` (if measured).
-- **Provenance/CASSA:** `SITE`, `INSTRMID`, `OBSERVER`, `PROPID`/program, `PLANID`,
-  `BLOCKID`, `OBSID` (unique), `IMAGETYP` (LIGHT/DARK/BIAS/FLAT), `CASSAVER`,
+- **Provenance/CRITO:** `SITE`, `INSTRMID`, `OBSERVER`, `PROPID`/program, `PLANID`,
+  `BLOCKID`, `OBSID` (unique), `IMAGETYP` (LIGHT/DARK/BIAS/FLAT), `CRITOVER`,
   `SWCREATE`, `CHECKSUM`/`DATASUM` (FITS standard checksums).
 
 A unique **`OBSID`** ties the frame to its plan/block/exposure record in the DB.
@@ -98,7 +98,7 @@ and notifications (alert operator if quality degrades — clouds, dew, focus dri
 S3-compatible (MinIO on-prem, or cloud). Path convention:
 
 ```
-s3://cassa-archive/
+s3://crito-archive/
   raw/{site}/{instrument}/{utdate}/{obsid}.fits
   calibrated/{site}/{instrument}/{utdate}/{obsid}.cal.fits
   masters/{instrument}/{type}/{master_id}.fits
@@ -119,7 +119,7 @@ the object store holds bytes.
 
 ## 7. Remote transfer (FTP / SFTP) — both directions
 
-The user explicitly wants images retrievable over **FTP**. CASSA uses transfer in
+The user explicitly wants images retrievable over **FTP**. CRITO uses transfer in
 two roles:
 
 ### A) Edge → Core ingest (push)
@@ -138,7 +138,7 @@ two roles:
   interactive path.
 
 ```
-Users ──SFTP/FTP──▶  CASSA FTP Gateway  ──▶ object store (read-only, scoped)
+Users ──SFTP/FTP──▶  CRITO FTP Gateway  ──▶ object store (read-only, scoped)
 Users ──HTTPS────▶  Archive API (search, signed URLs)
 ```
 
@@ -158,10 +158,10 @@ Users ──HTTPS────▶  Archive API (search, signed URLs)
 
 ## 9. Optional downstream hooks
 
-CASSA stops at calibrated + plate-solved frames, but exposes hooks for science
+CRITO stops at calibrated + plate-solved frames, but exposes hooks for science
 pipelines: difference imaging, aperture/PSF photometry, light-curve building,
 moving-object linking. These can subscribe to the "frame archived" event on the bus
-and run as independent consumers — kept out of the core to keep CASSA focused.
+and run as independent consumers — kept out of the core to keep CRITO focused.
 
 See **[04-PLANNING-SCHEDULING.md](04-PLANNING-SCHEDULING.md)** for how observations
 are planned and executed.

@@ -16,7 +16,7 @@ connection to IUB**.
 | **Seeing monitor (DIMM/MASS)** | Atmospheric seeing (arcsec) | DIMM telescope, or derived from science-frame FWHM |
 | **Wind/safety interlocks** | Hard limits | Dedicated relays / PLC |
 
-All exposed to CASSA via the **ObservingConditions** and **SafetyMonitor** device
+All exposed to CRITO via the **ObservingConditions** and **SafetyMonitor** device
 roles (Alpaca/INDI), plus the all-sky as an image source.
 
 ## 2. Seeing

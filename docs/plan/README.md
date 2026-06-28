@@ -1,8 +1,8 @@
-# CASSA — Coordinated Astronomical Scheduling, Slewing & Acquisition
+# CRITO — Coordinated Astronomical Scheduling, Slewing & Acquisition
 
 **A multi-site robotic & manual telescope/dome control system for IUB (Independent University, Bangladesh)**
 
-This folder is the complete design plan for CASSA: a platform to operate multiple
+This folder is the complete design plan for CRITO: a platform to operate multiple
 telescopes and domes spread across different geographic sites, from a single
 control center at IUB. It supports **full manual control** of every device, plus
 optional automation (planning, scheduling, autonomous plan execution), live
@@ -39,7 +39,7 @@ ingestion, and remote retrieval of images over FTP/SFTP.
                          └───────────────┬──────────────────────┘
                                          │  HTTPS / WSS (VPN)
                          ┌───────────────┴──────────────────────┐
-                         │     CASSA CORE  (cloud / on-prem)     │
+                         │     CRITO CORE  (cloud / on-prem)     │
                          │  API · Scheduler · Broker · DB · MQ   │
                          └───────┬───────────────────┬──────────┘
                                  │  VPN / message bus │

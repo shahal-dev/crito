@@ -66,7 +66,7 @@ For sources without a clean API (ATels, some MPC pages, observatory bulletins):
 
 ## 4. Filtering & scoring (the important part)
 
-Raw streams are huge; CASSA must surface only the few alerts worth follow-up. A
+Raw streams are huge; CRITO must surface only the few alerts worth follow-up. A
 **rules engine** evaluates each normalized alert with user-defined filters:
 
 - **Observability**: is the region above the horizon / airmass limit at any of our
@@ -95,7 +95,7 @@ Qualifying candidates create a **ToO observation request** (see
 
 ## 6. Outbound / reporting (optional, later)
 - Post follow-up results back to the community: TNS reports (classification/photometry),
-  GCN Circulars, ATels — with human approval. Keeps CASSA a good citizen of the
+  GCN Circulars, ATels — with human approval. Keeps CRITO a good citizen of the
   transient ecosystem.
 
 ## 7. Reliability

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import CritoLogo from "./CritoLogo";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   DashTelescope, ImageRec, SiteRef, Telemetry,
@@ -9,6 +10,7 @@ import Candidates from "./Candidates";
 import Dashboard from "./Dashboard";
 import Devices from "./Devices";
 import ExecutionMonitor from "./ExecutionMonitor";
+import ExposurePlanner from "./ExposurePlanner";
 import LiveControl from "./LiveControl";
 import Login from "./Login";
 import PlanPage from "./PlanPage";
@@ -18,7 +20,7 @@ type Active = { site: SiteRef; telescope: DashTelescope };
 
 function loadActive(): Active | null {
   try {
-    const s = localStorage.getItem("cassa_active");
+    const s = localStorage.getItem("crito_active");
     if (s) {
       const a = JSON.parse(s) as Active;
       setApiBase(a.site.url);
@@ -41,8 +43,8 @@ export default function App() {
 
   const setActive = (a: Active | null) => {
     setActiveState(a);
-    if (a) localStorage.setItem("cassa_active", JSON.stringify(a));
-    else localStorage.removeItem("cassa_active");
+    if (a) localStorage.setItem("crito_active", JSON.stringify(a));
+    else localStorage.removeItem("crito_active");
   };
 
   // validate a stored token on load
@@ -148,7 +150,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <img src="/logo.png" className="logo" alt="CASSA" onClick={() => navigate("/")} />
+        <CritoLogo onClick={() => navigate("/")} />
         {!onDashboard && active && (
           <span className="muted" style={{ fontSize: 12 }}>
             {active.site.name} · {active.telescope.name}
@@ -176,6 +178,7 @@ export default function App() {
             {active && <NavLink to="/console">Console</NavLink>}
             {active && <NavLink to="/candidates">Candidates</NavLink>}
             {active && <NavLink to="/plan">Plan</NavLink>}
+            {active && <NavLink to="/exposure">Exposure</NavLink>}
             {active && <NavLink to="/observe">Observe</NavLink>}
             {atLeast("admin") && <NavLink to="/users">Users</NavLink>}
           </nav>
@@ -189,12 +192,13 @@ export default function App() {
         <Route path="/console" element={requireScope(consolePage)} />
         <Route path="/candidates" element={requireScope(<Candidates />)} />
         <Route path="/plan" element={requireScope(<PlanPage tel={tel} />)} />
+        <Route path="/exposure" element={requireScope(<ExposurePlanner />)} />
         <Route path="/observe" element={requireScope(<ExecutionMonitor tel={tel} />)} />
         <Route path="/users" element={atLeast("admin") ? <Users /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      <footer>{active ? `last update ${tel?.ts ?? "—"}` : "CASSA · select a location"}</footer>
+      <footer>{active ? `last update ${tel?.ts ?? "—"}` : "CRITO · select a location"}</footer>
 
       {active && <BottomTerminal tel={tel} />}
     </div>

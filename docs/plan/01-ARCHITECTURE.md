@@ -2,16 +2,16 @@
 
 ## 1. Topology: edge + core
 
-CASSA is a **two-tier distributed system**:
+CRITO is a **two-tier distributed system**:
 
-- **CASSA Core** — central services hosted at IUB (or a small cloud VM with a VPN
+- **CRITO Core** — central services hosted at IUB (or a small cloud VM with a VPN
   back to IUB). Owns planning, scheduling, the archive, the alert broker, the API,
   and the operator console. Source of truth.
 - **Site Agents** — one edge node per physical site. Drives that site's hardware,
   enforces local safety, buffers data, and stays operable when the WAN link drops.
 
 ```
-┌───────────────────────────── CASSA CORE (IUB) ─────────────────────────────┐
+┌───────────────────────────── CRITO CORE (IUB) ─────────────────────────────┐
 │                                                                            │
 │  ┌──────────┐   ┌────────────┐   ┌──────────────┐   ┌──────────────────┐   │
 │  │  Web UI   │──▶│  API GW /  │──▶│  Scheduler    │   │  Alert Broker     │   │

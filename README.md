@@ -1,4 +1,4 @@
-# CASSA — Observatory Control System
+# CRITO — Observatory Control System
 
 Web-controlled, multi-observatory system for **transient follow-up**: ingest from the
 **ALeRCE** broker → filter by visibility → supervisor approval → automated imaging on
@@ -7,7 +7,7 @@ machine, role-based access control, and a provenance FITS archive.
 
 ## 📖 Documentation
 - **[docs/COOKBOOK.md](docs/COOKBOOK.md)** — the full guide: architecture, configuration,
-  and task-by-task recipes for everything CASSA does. **Start here.**
+  and task-by-task recipes for everything CRITO does. **Start here.**
 - **[RUNBOOK.md](RUNBOOK.md)** — hands-on operational steps (setup, `indiserver`, PHD2,
   weather/safety, plate-solve, calibration).
 - **[docs/plan/](docs/plan/README.md)** — the original system design.
@@ -32,17 +32,17 @@ machine, role-based access control, and a provenance FITS archive.
 ### Broker fetching — ALeRCE
 - **Source:** ALeRCE ZTF API, `https://api.alerce.online/ztf/v1/objects/`.
 - **Strategy:** query the **`stamp_classifier`** once per transient class
-  (`CASSA_ALERCE_CLASSES`, default `SN,AGN,VS`) **concurrently**, so every object comes
+  (`CRITO_ALERCE_CLASSES`, default `SN,AGN,VS`) **concurrently**, so every object comes
   back already labelled with a class + probability. If the classifier query returns
   nothing, it falls back to a plain "recent objects" query.
 - **Server-side narrowing** (so the broker doesn't sort its whole catalogue):
-  `classifier=stamp_classifier`, `class=<cls>`, `probability ≥ CASSA_ALERCE_PROBABILITY`
-  (0.4), `ndet ≥ CASSA_ALERCE_MIN_NDET`, `order_by=lastmjd DESC`, and a **`lastmjd`
-  lower bound** of `now − CASSA_ALERCE_LOOKBACK_DAYS` (7 days) — i.e. only objects that
+  `classifier=stamp_classifier`, `class=<cls>`, `probability ≥ CRITO_ALERCE_PROBABILITY`
+  (0.4), `ndet ≥ CRITO_ALERCE_MIN_NDET`, `order_by=lastmjd DESC`, and a **`lastmjd`
+  lower bound** of `now − CRITO_ALERCE_LOOKBACK_DAYS` (7 days) — i.e. only objects that
   were **active in the last week**. Paged `page_size`×`max_pages` (100×2).
-- **Interval:** the poller runs every **`CASSA_ALERCE_POLL_S`** (default **600 s / 10 min**,
+- **Interval:** the poller runs every **`CRITO_ALERCE_POLL_S`** (default **600 s / 10 min**,
   floor 30 s); plus a manual **Poll ALeRCE now** button. Uses one shared async `httpx`
-  client with `follow_redirects` + a generous read timeout (`CASSA_ALERCE_TIMEOUT_S`).
+  client with `follow_redirects` + a generous read timeout (`CRITO_ALERCE_TIMEOUT_S`).
 
 ### The data we get
 Each raw object is normalized (missing keys → `null`, never raises) to:
@@ -57,8 +57,8 @@ For each alert with coordinates (computed in a worker thread so the feed never s
    falling back to −12° then 0° near the poles) is the observing window. Moon/Sun
    positions are pre-computed over that grid.
 2. The target's **altitude** is transformed (astropy AltAz) across the dark grid.
-   **Observable = it clears `CASSA_ALT_MIN_DEG` (30°) at some point during dark.**
-3. When observable, CASSA records the **window** (first→last sample above 30°), the
+   **Observable = it clears `CRITO_ALT_MIN_DEG` (30°) at some point during dark.**
+3. When observable, CRITO records the **window** (first→last sample above 30°), the
    **peak altitude**, **min airmass** (`1/sin(alt)`), the **closest moon separation**, and
    the **mean lunar illumination** over the window.
 
@@ -74,7 +74,7 @@ Observable candidates are ranked by a weighted score:
 score =  w_prob·prob  +  w_alt·(peak_alt/90)  +  w_airmass·(1/min_airmass)
        +  w_moon·(moon_sep/180)  −  w_faint·(mag/mag_limit)
 ```
-(weights `CASSA_SCORE_W_*`, defaults 1·1·0.5·0.5·0.5). Higher = better-placed, brighter,
+(weights `CRITO_SCORE_W_*`, defaults 1·1·0.5·0.5·0.5). Higher = better-placed, brighter,
 farther from the Moon, higher-confidence.
 
 ### How we save it
@@ -102,13 +102,13 @@ candidate IDs → the whole feed is re-evaluated against the new dark window. Ne
 
 ### Weather API → safety
 - **`WeatherApiPoller`** polls **Open-Meteo** (free, no key — default) for the site's own
-  lat/lon every **`CASSA_WEATHER_POLL_S`** (600 s), fetching temperature, humidity, wind
+  lat/lon every **`CRITO_WEATHER_POLL_S`** (600 s), fetching temperature, humidity, wind
   (km/h), cloud cover, precipitation/rain. (OpenWeatherMap supported with a key; an INDI
   weather device takes priority.) Readings are pushed to the **safety monitor**.
 - The **`SafetyMonitor`** re-evaluates **every 1 s**: rain / high wind / high humidity /
-  high cloud / **stale (> `CASSA_SAFETY_STALE_S`) or missing data** → UNSAFE; thresholds
+  high cloud / **stale (> `CRITO_SAFETY_STALE_S`) or missing data** → UNSAFE; thresholds
   in between → WARN; e-stop → FAULT. Returning to SAFE requires conditions to hold for
-  `CASSA_SAFETY_CLEAR_DELAY_S` (hysteresis). UNSAFE/FAULT **aborts the sequence + parks**.
+  `CRITO_SAFETY_CLEAR_DELAY_S` (hysteresis). UNSAFE/FAULT **aborts the sequence + parks**.
   Live weather shows on the dashboard cards and the Console safety banner.
 
 > **Cadence summary:** ALeRCE poll **600 s** · weather poll **600 s** · safety eval **1 s** ·
@@ -145,7 +145,7 @@ bus that separates them arrives in Phase 5 when there's a real remote site.
 # vendor driver packages), run indiserver with your device drivers, e.g.:
 indiserver -v indi_eqmod indi_toupbase indi_asi_ccd   # whatever you have
 ```
-Point CASSA at it with `CASSA_INDI_HOST`/`CASSA_INDI_PORT` (or set the host/port
+Point CRITO at it with `CRITO_INDI_HOST`/`CRITO_INDI_PORT` (or set the host/port
 from the console). If the instruments are on the same box, `localhost:7624` works.
 
 ### 2. Start the core API
@@ -169,7 +169,7 @@ Open **http://localhost:5173**. You should see `INDI connected`.
    camera, focuser, filter). Or assign roles manually and click **Connect**.
 3. For a **real serial mount** (EQ6-R via EQDIR), type the port (e.g. `/dev/ttyUSB0`)
    in its row before connecting.
-4. To point CASSA at a **remote edge node**, set the INDI host/port and click
+4. To point CRITO at a **remote edge node**, set the INDI host/port and click
    **Connect server**.
 
 Your choices persist to `data/bindings.json` and reconnect automatically on restart.
@@ -196,14 +196,14 @@ curl -OJ localhost:8000/api/images/<image_id>/fits
 ## Retrieve images over SFTP/FTP
 ```bash
 docker compose -f deploy/docker-compose.yml --profile ftp up -d
-# open http://localhost:8082 (admin / cassa-admin), create an SFTP user whose
+# open http://localhost:8082 (admin / crito-admin), create an SFTP user whose
 # home maps to /srv/archive, then:
 sftp -P 2022 <user>@localhost      # browse raw/ previews/ thumbs/
 ```
 
 ## Multi-device / multi-brand notes
 
-CASSA makes no assumptions about device brands. Whatever your `indiserver`
+CRITO makes no assumptions about device brands. Whatever your `indiserver`
 exposes shows up under **Scan**; assign each to a role and connect. Serial mounts
 (e.g. EQ6-R via EQDIR) take a port like `/dev/ttyUSB0` in their row before
 connecting. See the **bring-up checklist** in
@@ -211,7 +211,7 @@ connecting. See the **bring-up checklist** in
 
 ## Layout
 ```
-cassa/
+crito/
   dal/        device abstraction layer (roles, INDI client, INDI adapter, imaging)
   agent/      site agent (device manager)
   core/       FastAPI app + config

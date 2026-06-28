@@ -9,7 +9,7 @@ import pytest
 from astropy.io import fits
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cassa.agent.fits_writer import author_fits  # noqa: E402
+from crito.agent.fits_writer import author_fits  # noqa: E402
 
 
 def _raw_frame() -> bytes:
@@ -29,7 +29,7 @@ def test_author_fits_headers_and_checksum():
         "exptime": 2.0,
         "image_type": "LIGHT",
         "object_name": "M42",
-        "observer": "CASSA",
+        "observer": "CRITO",
         "telescope": "EQMod Mount",
         "instrument": "Toupcam",
         "version": "0.0.1",

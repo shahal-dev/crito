@@ -218,6 +218,55 @@ export type NightInfo = {
 
 export type ActivityEvent = { ts: string; msg: string; kind: string };
 
+// --- exposure / SNR planner -----------------------------------------------
+export type ExposureSetup = {
+  id: string;
+  name: string;
+  focal_length_mm: number | null;
+  pixel_size_um: number | null;
+  camera: string | null;
+  calibration_file: string | null;
+};
+
+export type ExposureSetups = { setups: ExposureSetup[]; default_id: string | null };
+
+export type ExposureCalibration = {
+  available: boolean;
+  path: string;
+  camera: string | null;
+  sensor: string | null;
+  focal_length_mm: number | null;
+  pixel_size_um: number | null;
+  gains: number[];
+  filters: string[];
+  temps: number[];
+  error?: string;
+};
+
+export type ExposurePlan = {
+  target_mag: number;
+  required_snr: number;
+  filter: string | null;
+  source_e_per_s: number;
+  sky_e_per_s_per_px: number;
+  dark_e_per_s_per_px: number;
+  read_noise_e: number;
+  pixel_scale_arcsec: number;
+  fwhm_pix: number;
+  aperture_npix: number;
+  sub_min_s: number;
+  sub_max_s: number | null;
+  sub_recommended_s: number;
+  snr_per_sub: number;
+  n_subs: number;
+  total_integration_s: number;
+  total_integration_min: number;
+  snr_achieved: number;
+  mag_error: number;
+  limiting_noise: string; // source | sky | dark | read
+  warnings: string[];
+};
+
 export type ResolveResult = { name: string; ra_hours: number; ra_deg: number; dec_deg: number };
 
 export type ExposureSet = {
@@ -250,9 +299,9 @@ export type Plan = {
 // Active site backend base URL ("" = same-origin). Selecting a telescope on the
 // dashboard points all API/WS/image calls at that site's backend.
 let apiBase = "";
-let token = localStorage.getItem("cassa_token") || "";
-let role = localStorage.getItem("cassa_role") || "";
-let username = localStorage.getItem("cassa_user") || "";
+let token = localStorage.getItem("crito_token") || "";
+let role = localStorage.getItem("crito_role") || "";
+let username = localStorage.getItem("crito_user") || "";
 
 export const ROLE_RANK: Record<string, number> = { viewer: 1, observer: 2, operator: 3, admin: 4 };
 
@@ -264,15 +313,15 @@ export function getApiBase(): string {
 }
 export function setAuth(t: string, r: string, u: string): void {
   token = t; role = r; username = u;
-  localStorage.setItem("cassa_token", t);
-  localStorage.setItem("cassa_role", r);
-  localStorage.setItem("cassa_user", u);
+  localStorage.setItem("crito_token", t);
+  localStorage.setItem("crito_role", r);
+  localStorage.setItem("crito_user", u);
 }
 export function clearAuth(): void {
   token = ""; role = ""; username = "";
-  localStorage.removeItem("cassa_token");
-  localStorage.removeItem("cassa_role");
-  localStorage.removeItem("cassa_user");
+  localStorage.removeItem("crito_token");
+  localStorage.removeItem("crito_role");
+  localStorage.removeItem("crito_user");
 }
 export function getToken(): string { return token; }
 export function getRole(): string { return role; }

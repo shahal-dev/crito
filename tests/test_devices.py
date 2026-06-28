@@ -4,14 +4,14 @@ import sys
 from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cassa.agent.device_manager import DeviceManager, _roles_for  # noqa: E402
+from crito.agent.device_manager import DeviceManager, _roles_for  # noqa: E402
 
 
 def _settings(tmp_path):
     return SimpleNamespace(
         indi_host="localhost", indi_port=7624,
         bindings_path=str(tmp_path / "bindings.json"),
-        site_id="virtual", instrument_id="vinstr", observer="CASSA",
+        site_id="virtual", instrument_id="vinstr", observer="CRITO",
         telescope_name="T", instrument_name="C",
     )
 

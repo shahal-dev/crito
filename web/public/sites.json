@@ -1,4 +1,4 @@
 [
   { "id": "iub-rooftop", "name": "IUB Rooftop Observatory", "url": "" },
-  { "id": "ciao", "name": "CASSA IUB Astronomical Observatory (CIAO)", "url": "http://localhost:8001" }
+  { "id": "ciao", "name": "CRITO IUB Astronomical Observatory (CIAO)", "url": "http://localhost:8001" }
 ]

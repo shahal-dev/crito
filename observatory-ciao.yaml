@@ -1,11 +1,11 @@
-# CASSA observatory definition — CIAO (second site).
-# Run a backend with this file:  CASSA_OBSERVATORY_FILE=observatory-ciao.yaml
-# See start-ciao.sh. Use the SAME CASSA_AUTH_SECRET as the other site so one login
+# CRITO observatory definition — CIAO (second site).
+# Run a backend with this file:  CRITO_OBSERVATORY_FILE=observatory-ciao.yaml
+# See start-ciao.sh. Use the SAME CRITO_AUTH_SECRET as the other site so one login
 # works across both.
 
 id: ciao
 name: CASSA IUB Astronomical Observatory
-observer: CASSA
+observer: CRITO
 instrument_id: ciao-main
 status: online
 

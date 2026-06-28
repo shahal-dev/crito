@@ -164,7 +164,7 @@ export default function SkyMap({
   }, []);
 
   const buildCfg = (v: Record<LayerKey, boolean>) => ({
-    container: "cassa-celestial",
+    container: "crito-celestial",
     datapath: `${base.current}/data/`,
     projection: "airy",
     interactive: true,
@@ -408,7 +408,7 @@ export default function SkyMap({
 
   return (
     <div className="skymap">
-      <div id="cassa-celestial" className="skymap-canvas">
+      <div id="crito-celestial" className="skymap-canvas">
         {err && <div className="muted skymap-err">{err}</div>}
       </div>
       <div className="row skymap-opts">

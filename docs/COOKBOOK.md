@@ -1,6 +1,6 @@
-# CASSA Cookbook
+# CRITO Cookbook
 
-End-to-end documentation for operating the CASSA observatory control system: what it
+End-to-end documentation for operating the CRITO observatory control system: what it
 is, how it's wired, how to configure it, and task-by-task recipes for everything it
 does. For the bare terminal runbook (one-time setup, starting `indiserver`, SFTP, the
 Makefile) see **[RUNBOOK.md](../RUNBOOK.md)** — this cookbook is the conceptual + how-to
@@ -9,7 +9,7 @@ companion.
 ---
 
 ## Contents
-1. [What CASSA is](#1-what-cassa-is)
+1. [What CRITO is](#1-what-crito-is)
 2. [Architecture](#2-architecture)
 3. [Core concepts](#3-core-concepts)
 4. [Install & run](#4-install--run)
@@ -17,14 +17,14 @@ companion.
 6. [The web app (pages)](#6-the-web-app-pages)
 7. [Recipes](#7-recipes)
 8. [API reference](#8-api-reference)
-9. [Configuration reference (`CASSA_*`)](#9-configuration-reference-cassa_)
+9. [Configuration reference (`CRITO_*`)](#9-configuration-reference-crito_)
 10. [Troubleshooting](#10-troubleshooting)
 
 ---
 
-## 1. What CASSA is
+## 1. What CRITO is
 
-CASSA is a web-controlled astronomical observatory system for **transient follow-up**.
+CRITO is a web-controlled astronomical observatory system for **transient follow-up**.
 It ingests alerts from the **ALeRCE** broker, filters them by **visibility** from your
 site, lets a supervisor **approve** targets, and **executes** imaging sequences on the
 telescope — with plate-solving, autofocus, guiding, a weather/safety state machine, a
@@ -39,19 +39,19 @@ pipeline state; **astropy** for all astronomy; **ASTAP** for plate-solving/HFR.
 
 ## 2. Architecture
 
-CASSA uses an **edge-per-site** model. Each observatory runs its own backend next to its
+CRITO uses an **edge-per-site** model. Each observatory runs its own backend next to its
 hardware; one web app aggregates them.
 
 ```
                             ┌─────────────── your laptop ───────────────┐
-                            │  Browser → CASSA web app (Vite/React)      │
+                            │  Browser → CRITO web app (Vite/React)      │
                             │  reads web/public/sites.json, then talks   │
                             │  directly to each site's backend (CORS+JWT)│
                             └───────┬─────────────────────────┬──────────┘
                                     │                         │
                  ┌──────────────────▼─────────┐   ┌───────────▼────────────────┐
                  │  Site A edge node (Pi)      │   │  Site B edge node (Pi)      │
-                 │  CASSA backend  :8000        │   │  CASSA backend  :8001        │
+                 │  CRITO backend  :8000        │   │  CRITO backend  :8001        │
                  │   observatory.yaml           │   │   observatory-ciao.yaml      │
                  │   SQLite archive + state     │   │   SQLite archive + state     │
                  │       │                       │   │       │                       │
@@ -61,14 +61,14 @@ hardware; one web app aggregates them.
 ```
 
 Key consequences:
-- **`indiserver` must be local to the hardware** (it's cabled to the gear). The CASSA
+- **`indiserver` must be local to the hardware** (it's cabled to the gear). The CRITO
   backend connects to it over TCP — usually on the same edge node.
 - **One login works across all sites** because every backend validates the same
-  **`CASSA_AUTH_SECRET`**-signed JWT. Users live on the hub; site backends only verify.
+  **`CRITO_AUTH_SECRET`**-signed JWT. Users live on the hub; site backends only verify.
 - The browser talks to each backend **directly** (cross-origin is allowed). Selecting a
   telescope points all subsequent API/WebSocket/image calls at that site's backend.
 
-### Backend components (wired in `cassa/core/app.py` lifespan)
+### Backend components (wired in `crito/core/app.py` lifespan)
 | Component | Role |
 |---|---|
 | `DeviceManager` | INDI transport + runtime role→device bindings |
@@ -92,7 +92,7 @@ Key consequences:
   served by one backend. Has a geographic location, weather, and one or more telescopes.
 - **Telescope** — a rig at a site, fronted by its own INDI server (`host:port`). The
   dashboard "Operate" button connects the site backend to the chosen telescope.
-- **Role binding** — CASSA doesn't hardcode device names. It discovers whatever INDI
+- **Role binding** — CRITO doesn't hardcode device names. It discovers whatever INDI
   exposes; you bind each **role** (mount / camera / guide / focuser / filter) to a real
   device in the console. Bindings persist to `bindings.json`.
 - **Candidate** — a broker alert that survived the visibility filter for a given night
@@ -114,12 +114,12 @@ Key consequences:
 
 **Backend (per site / edge node):**
 ```bash
-cd ~/Desktop/cassa
+cd ~/Desktop/crito
 python -m venv .cassatom && source .cassatom/bin/activate
 pip install -e .                                  # or: pip install -r requirements.txt
 cp .env.example .env                              # then edit (see §5)
 indiserver -v indi_simulator_telescope ...        # the site's INDI server (or real drivers)
-uvicorn cassa.core.app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn crito.core.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Frontend (your laptop):**
@@ -129,7 +129,7 @@ npm install
 npm run dev          # http://localhost:5173  (dev server handles SPA routing)
 ```
 
-First login: **`admin` / `admin`** (or `CASSA_ADMIN_PASSWORD`). **Change it immediately.**
+First login: **`admin` / `admin`** (or `CRITO_ADMIN_PASSWORD`). **Change it immediately.**
 
 To run a **second observatory** on the same machine, see [Recipe: add an observatory](#76-add-an-observatory).
 
@@ -143,25 +143,25 @@ Three places, in priority order (env always wins):
 Identity, **location** (pushed to the mount so RA/Dec are correct), telescopes (each with
 its INDI endpoint), equipment (documents the rig + feeds FITS provenance + plate-solve
 FOV via `telescope.focal_length_mm` and `camera.pixel_size_um`), `status`, and a manual
-`weather.seeing`. Select a different file with `CASSA_OBSERVATORY_FILE`.
+`weather.seeing`. Select a different file with `CRITO_OBSERVATORY_FILE`.
 
 ### 5.2 `web/public/sites.json` — the locations registry
 The list the dashboard aggregates. One entry per site backend URL (`""` = same-origin):
 ```json
 [
   { "id": "iub-rooftop", "name": "IUB Rooftop Observatory", "url": "" },
-  { "id": "ciao", "name": "CASSA IUB Astronomical Observatory (CIAO)", "url": "http://localhost:8001" }
+  { "id": "ciao", "name": "CRITO IUB Astronomical Observatory (CIAO)", "url": "http://localhost:8001" }
 ]
 ```
 
-### 5.3 `.env` (or `CASSA_*` env vars) — everything else
+### 5.3 `.env` (or `CRITO_*` env vars) — everything else
 API keys, auth, safety thresholds, solver, ALeRCE, etc. The backend auto-loads `.env`
-from the directory you run `uvicorn` from. **Rule:** the env var is `CASSA_` + the field
-name upper-cased (`weather_api_key` → `CASSA_WEATHER_API_KEY`). Full table in [§9](#9-configuration-reference-cassa_).
+from the directory you run `uvicorn` from. **Rule:** the env var is `CRITO_` + the field
+name upper-cased (`weather_api_key` → `CRITO_WEATHER_API_KEY`). Full table in [§9](#9-configuration-reference-crito_).
 `.env` is gitignored — keep secrets here.
 
-> **Multi-site:** every site backend must share the same **`CASSA_AUTH_SECRET`** so one
-> login works everywhere. Give each site its own `CASSA_DB_URL` and `CASSA_BINDINGS_PATH`.
+> **Multi-site:** every site backend must share the same **`CRITO_AUTH_SECRET`** so one
+> login works everywhere. Give each site its own `CRITO_DB_URL` and `CRITO_BINDINGS_PATH`.
 
 ---
 
@@ -185,7 +185,7 @@ The selected telescope persists (localStorage), so reloading a deep link restore
 ## 7. Recipes
 
 ### 7.0 Select a location & telescope
-Dashboard (`/`) → a location card → **Operate** on a telescope. CASSA points the backend
+Dashboard (`/`) → a location card → **Operate** on a telescope. CRITO points the backend
 at that telescope's INDI server (`POST /api/indi/server`) and opens the Console. The
 nav (Console/Candidates/Plan/Observe) now appears.
 
@@ -209,20 +209,20 @@ Any manual command **preempts the execution queue** (manual override) until you 
 ### 7.3 Plate-solve & autofocus (ASTAP)
 Prereqs: install **ASTAP** + a star DB on the edge node; set `telescope.focal_length_mm`
 in `observatory.yaml`. Then:
-- **Solve & center** (Lookup box) — capture → solve → if off by > `CASSA_CENTER_TOLERANCE_ARCSEC`,
-  sync the mount and re-slew; iterate. Optional per-frame WCS: `CASSA_SOLVE_SCIENCE_FRAMES=true`.
+- **Solve & center** (Lookup box) — capture → solve → if off by > `CRITO_CENTER_TOLERANCE_ARCSEC`,
+  sync the mount and re-slew; iterate. Optional per-frame WCS: `CRITO_SOLVE_SCIENCE_FRAMES=true`.
 - **Autofocus** (Focuser box) — HFR V-curve sweep, parabola fit, backlash-compensated
   move; a live V-curve plot shows on the Console.
-Full setup in **RUNBOOK §12**. Disable both with `CASSA_SOLVER=none`.
+Full setup in **RUNBOOK §12**. Disable both with `CRITO_SOLVER=none`.
 
 ### 7.4 Guiding (PHD2)
-Run PHD2 on the edge node with its server enabled; point CASSA at it
-(`CASSA_PHD2_HOST/PORT`). Console → **Auto Guider**: Start/Stop; a live RA/Dec error plot
+Run PHD2 on the edge node with its server enabled; point CRITO at it
+(`CRITO_PHD2_HOST/PORT`). Console → **Auto Guider**: Start/Stop; a live RA/Dec error plot
 streams from PHD2. Details in **RUNBOOK §10**.
 
 ### 7.5 Transient follow-up pipeline
 1. **Ingest** — Candidates tab → **Poll ALeRCE now** (or the automatic poll every
-   `CASSA_ALERCE_POLL_S`). Tune `CASSA_ALERCE_CLASSES`, `CASSA_ALERCE_PROBABILITY`.
+   `CRITO_ALERCE_POLL_S`). Tune `CRITO_ALERCE_CLASSES`, `CRITO_ALERCE_PROBABILITY`.
 2. **Review** — candidates are shown observable-first, tagged **observable** / **not up
    tonight**, with class, magnitude, peak altitude, window, moon separation.
 3. **Decide** — per candidate set **Exp (s)**, **Shots**, optional **Start time**, then:
@@ -252,8 +252,8 @@ Plan tab — reusable named templates:
   (pick a date/time → fires automatically, gated by safety).
 
 **Calibration behavior** (see also **RUNBOOK §13**):
-- **Dark / Bias** — CASSA moves the wheel to the opaque **dark filter** (auto-detected
-  by a slot named dark/blank/opaque, or `CASSA_DARK_FILTER_SLOT`). Bias is forced to 0 s.
+- **Dark / Bias** — CRITO moves the wheel to the opaque **dark filter** (auto-detected
+  by a slot named dark/blank/opaque, or `CRITO_DARK_FILTER_SLOT`). Bias is forced to 0 s.
 - **Flat** — the sequence **pauses and prompts**; set up your flat source, then click
   **Confirm & continue** (banner on Console + Observe).
 
@@ -286,11 +286,11 @@ site (shared secret). Change the seeded admin password first.
 2. **Backend** — run a backend for it with its own config/DB/bindings/port. Example
    `start-ciao.sh`:
    ```bash
-   CASSA_OBSERVATORY_FILE=observatory-ciao.yaml \
-   CASSA_DB_URL="sqlite+aiosqlite:///data/ciao.db" \
-   CASSA_BINDINGS_PATH="data/ciao_bindings.json" \
-   CASSA_INDI_PORT=7625 \
-   uvicorn cassa.core.app:app --port 8001        # same CASSA_AUTH_SECRET as the others
+   CRITO_OBSERVATORY_FILE=observatory-ciao.yaml \
+   CRITO_DB_URL="sqlite+aiosqlite:///data/ciao.db" \
+   CRITO_BINDINGS_PATH="data/ciao_bindings.json" \
+   CRITO_INDI_PORT=7625 \
+   uvicorn crito.core.app:app --port 8001        # same CRITO_AUTH_SECRET as the others
    ```
 3. **Registry** — add it to `web/public/sites.json` with the backend URL.
 4. Reload — the dashboard shows the new location card.
@@ -348,7 +348,7 @@ GET /api/images   /api/images/{id}   /api/images/{id}/{fits,preview.png,thumb.pn
 
 ---
 
-## 9. Configuration reference (`CASSA_*`)
+## 9. Configuration reference (`CRITO_*`)
 
 Defaults in parentheses. Site identity/location/optics are normally set in
 `observatory.yaml`; an env var overrides the file.
@@ -358,7 +358,7 @@ Defaults in parentheses. Site identity/location/optics are normally set in
 `SITE_ID` · `OBSERVER` · `INSTRUMENT_ID`
 
 **Storage**
-`DB_URL` (sqlite+aiosqlite:///data/cassa.db) · `DATA_DIR` (data/store) ·
+`DB_URL` (sqlite+aiosqlite:///data/crito.db) · `DATA_DIR` (data/store) ·
 `BINDINGS_PATH` (data/bindings.json)
 
 **Auth**
@@ -397,14 +397,14 @@ Defaults in parentheses. Site identity/location/optics are normally set in
 
 | Symptom | Cause / fix |
 |---|---|
-| Dashboard card "unreachable" | That site's backend isn't running, or its `CASSA_AUTH_SECRET` differs (401). Start it; match the secret. |
+| Dashboard card "unreachable" | That site's backend isn't running, or its `CRITO_AUTH_SECRET` differs (401). Start it; match the secret. |
 | New API route 404s | Backend not restarted after an update. Restart `uvicorn`. |
-| Login fails | Wrong creds, or `CASSA_AUTH_SECRET` changed (old tokens invalid → log in again). |
+| Login fails | Wrong creds, or `CRITO_AUTH_SECRET` changed (old tokens invalid → log in again). |
 | Everything 401 | Token missing/expired — the app should redirect to login; otherwise clear localStorage. |
 | RA/Dec wrong by hours | Site `location` not set → mount assumes longitude 0. Fill `observatory.yaml` location. |
-| "INDI down" | `indiserver` not running / wrong `CASSA_INDI_HOST:PORT` / device not bound. |
+| "INDI down" | `indiserver` not running / wrong `CRITO_INDI_HOST:PORT` / device not bound. |
 | Safety stuck **UNSAFE "no weather data"** | No weather source reachable. The API needs internet; or push a reading; or **Override** (attended only). |
-| Plate-solve / autofocus disabled | `CASSA_SOLVER=none`, ASTAP not installed, or no focuser bound. Install ASTAP + set focal length. |
+| Plate-solve / autofocus disabled | `CRITO_SOLVER=none`, ASTAP not installed, or no focuser bound. Install ASTAP + set focal length. |
 | HFR reads "—" | ASTAP `-analyse` output format differs by version; check the backend debug log. |
 | Tonight's Queue empty | Nothing queued/scheduled yet, or all targets below 30° tonight (winter objects in summer). |
 | Candidate buttons all disabled | It's decided with no block to remove → click **↺ Reset**. |
@@ -412,5 +412,5 @@ Defaults in parentheses. Site identity/location/optics are normally set in
 
 ---
 
-*Generated for CASSA. Keep this in sync as features land; the per-task terminal steps live
+*Generated for CRITO. Keep this in sync as features land; the per-task terminal steps live
 in [RUNBOOK.md](../RUNBOOK.md).*

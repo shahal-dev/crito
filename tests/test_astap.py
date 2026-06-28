@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cassa.agent import astap  # noqa: E402
+from crito.agent import astap  # noqa: E402
 
 
 def test_compute_fov():

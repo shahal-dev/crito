@@ -2,7 +2,7 @@
 
 ## 1. Vision
 
-Build **CASSA**, a single platform from which IUB operators can control multiple
+Build **CRITO**, a single platform from which IUB operators can control multiple
 telescopes and domes located at different sites, with **full manual access to every
 device** and optional automation for planning, scheduling, and autonomous execution.
 The system supports the complete observing lifecycle:
@@ -34,7 +34,7 @@ autonomously under policy.
 ### Out of scope (initial phases)
 - Building physical hardware / observatory civil works.
 - Full survey-grade data-reduction pipelines (photometry catalogs, difference
-  imaging) — CASSA produces calibrated, plate-solved frames; deep science reduction
+  imaging) — CRITO produces calibrated, plate-solved frames; deep science reduction
   is a downstream consumer (hooks provided).
 - Public data portal (can be added later on top of the archive API).
 

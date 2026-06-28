@@ -1,7 +1,7 @@
 # 11 — Roadmap (phased delivery)
 
 Build in thin, working slices. Each phase ends with something **operable and
-testable** on the real rig. CASSA targets real instruments over INDI only —
+testable** on the real rig. CRITO targets real instruments over INDI only —
 devices are discovered from the INDI server and bound to roles at runtime, so
 software can be built against a small bench rig and scaled to the full kit.
 
@@ -127,7 +127,7 @@ drivers. (See [02-DEVICE-CONTROL.md](02-DEVICE-CONTROL.md) §1a.)
       jog, tracking on/off, **park/unpark**, and `abort_slew`.
 - [ ] Set the **site location** (lat/lon/elev) and confirm a goto lands sensibly.
 - [ ] Configure **slew limits + horizon mask + Sun-avoidance** before any daytime test.
-- [ ] Do a one-time **mount alignment/sync** (CASSA's plate-solve sync refines this in
+- [ ] Do a one-time **mount alignment/sync** (CRITO's plate-solve sync refines this in
       Phase 2).
 
 ### C. Cameras & focuser — ToupTek (`indi_toupbase`)
@@ -144,12 +144,12 @@ drivers. (See [02-DEVICE-CONTROL.md](02-DEVICE-CONTROL.md) §1a.)
 - [ ] Launch PHD2; connect mount via **INDI** and the **GEM guide cam** via INDI.
 - [ ] Run **calibration** near the celestial equator; confirm guide pulses move the star
       the right way. Tune for the EQ6-R.
-- [ ] Enable PHD2's **server/event API**; confirm CASSA can read the guide graph and
+- [ ] Enable PHD2's **server/event API**; confirm CRITO can read the guide graph and
       issue start/stop/dither.
 
-### E. CASSA connection & end-to-end
+### E. CRITO connection & end-to-end
 - [ ] Run `indiserver` with the real drivers (`indi_eqmod`, `indi_toupbase`, …) on the
-      edge node; point `CASSA_INDI_HOST/PORT` at it (or set it from the console).
+      edge node; point `CRITO_INDI_HOST/PORT` at it (or set it from the console).
 - [ ] In the console: **Scan → assign role → Connect** each device. Confirm all roles
       map: mount, camera (imaging), focuser, guide (via PHD2). Bindings persist to
       `bindings.json`.
@@ -189,7 +189,7 @@ drivers. (See [02-DEVICE-CONTROL.md](02-DEVICE-CONTROL.md) §1a.)
 | Hardware/driver incompatibility | INDI-first via the DAL (Alpaca added later); bench-test each device's driver before install; buy gear with known INDI drivers |
 | Remote-site network flakiness | Edge autonomy, durable bus, resumable transfers, dial-out VPN |
 | Weather damage (monsoon/dew) | Fail-safe Safety FSM + hardware relay + UPS; conservative limits |
-| Scope creep | Phase gates; CASSA stops at calibrated+solved frames, science pipelines are hooks |
+| Scope creep | Phase gates; CRITO stops at calibrated+solved frames, science pipelines are hooks |
 | Plate-solve reliability | Hint-based + blind fallback; correct index files per FoV; QA on residuals |
 | Losing alerts | Durable Kafka/JetStream consumers; archive every raw packet |
 ```

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { post, setAuth } from "./api";
+import CritoCanvas from "./CritoCanvas";
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState("");
@@ -26,30 +27,61 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="loginwrap">
-      <section className="card loginbox">
-        <img src="/logo.png" className="logo-lg" alt="CASSA" />
-        <div className="muted" style={{ marginBottom: 16 }}>Sign in to the observatory network</div>
-        <div className="row">
-          <label style={{ flex: 1 }}>
-            Username
-            <input value={username} autoFocus onChange={(e) => setUsername(e.target.value)}
-                   onKeyDown={(e) => e.key === "Enter" && submit()} />
-          </label>
-        </div>
-        <div className="row">
-          <label style={{ flex: 1 }}>
-            Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                   onKeyDown={(e) => e.key === "Enter" && submit()} />
-          </label>
-        </div>
-        {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-        <div className="row">
-          <button className="active" style={{ flex: 1 }} disabled={busy || !username} onClick={submit}>
-            {busy ? "…" : "Sign in"}
-          </button>
-        </div>
-      </section>
+      <div className="loginpanel">
+
+        {/* CASSA logo sits above the card */}
+        <img src="/logo.png" className="logo-lg login-logo-above" alt="CASSA" />
+
+        <section className="card loginbox">
+          {/* CRITO D3 brand mark inside the card */}
+          <div className="login-brand">
+            <CritoCanvas />
+          </div>
+
+          <div className="muted" style={{ textAlign: "center", marginBottom: 16, marginTop: 4 }}>
+            Sign in to the observatory network
+          </div>
+
+          <div className="row">
+            <label style={{ flex: 1 }}>
+              Username
+              <input
+                id="login-username"
+                value={username}
+                autoFocus
+                autoComplete="username"
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+              />
+            </label>
+          </div>
+          <div className="row">
+            <label style={{ flex: 1 }}>
+              Password
+              <input
+                id="login-password"
+                type="password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+              />
+            </label>
+          </div>
+          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
+          <div className="row">
+            <button
+              className="active"
+              style={{ flex: 1 }}
+              disabled={busy || !username}
+              onClick={submit}
+            >
+              {busy ? "…" : "Sign in"}
+            </button>
+          </div>
+        </section>
+
+      </div>
     </div>
   );
 }

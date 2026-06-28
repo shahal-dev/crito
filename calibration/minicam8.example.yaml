@@ -1,0 +1,39 @@
+# QHY miniCAM8 (Sony IMX585) calibration table — EXAMPLE / STARTING POINT.
+#
+# The numbers below are rough datasheet/estimate values so the planner runs out of
+# the box. REPLACE them with measurements from:
+#     python -m crito.calib.characterize --device "QHY CCD QHYminiCam8" ...
+# and on-sky sky-rate / zero-point measurements (crito.calib.analysis.sky_rate /
+# zero_point). Everything is in ELECTRONS; sky rate + zero point are gain-
+# independent (they live per-filter), read noise + full well are per-gain.
+
+camera: QHY miniCAM8
+sensor: IMX585
+pixel_size_um: 2.9
+
+# Per gain setting: read noise (e-) and full well (e-) both change with gain on a
+# CMOS sensor. Below the dual-conversion-gain step ~ low read noise; above it the
+# full well collapses. CONFIRM the step + numbers from QHY's RN/FW-vs-gain charts
+# or by measuring. (Standard mode spans ~0.76–7.8 e- read noise, 54 ke- full well.)
+gains:
+  "0":   { read_noise_e: 5.0, full_well_e: 51000, system_gain_e_per_adu: 0.80 }  # TODO measure
+  "60":  { read_noise_e: 3.2, full_well_e: 38000, system_gain_e_per_adu: 0.45 }  # TODO measure
+  "120": { read_noise_e: 1.1, full_well_e: 13000, system_gain_e_per_adu: 0.16 }  # TODO measure (above DCG step)
+  "200": { read_noise_e: 0.9, full_well_e: 9000,  system_gain_e_per_adu: 0.10 }  # TODO measure
+
+# Dark current (e-/s/pixel) keyed by sensor temperature °C — gain-independent.
+dark_current_e_per_s:
+  "-10": 0.01   # TODO measure; IMX585 is low/no-amp-glow
+
+# Per filter, measured ON-SKY at your site (electrons, gain-independent):
+#   sky_e_per_s_per_px — sky brightness through this filter at IUB/Dhaka
+#   zero_point_e       — magnitude that yields 1 e-/s through the whole system
+# These depend on optics + site + filter, NOT on the gain. MEASURE all of them.
+filters:
+  L:  { sky_e_per_s_per_px: 8.0,  zero_point_e: 21.0 }   # TODO measure (urban broadband = bright)
+  R:  { sky_e_per_s_per_px: 3.0,  zero_point_e: 20.3 }   # TODO measure
+  G:  { sky_e_per_s_per_px: 3.5,  zero_point_e: 20.4 }   # TODO measure
+  B:  { sky_e_per_s_per_px: 2.0,  zero_point_e: 19.8 }   # TODO measure
+  Ha: { sky_e_per_s_per_px: 0.12, zero_point_e: 18.6 }   # TODO measure (narrowband = dark sky)
+  OIII: { sky_e_per_s_per_px: 0.15, zero_point_e: 18.8 } # TODO measure
+  SII:  { sky_e_per_s_per_px: 0.10, zero_point_e: 18.3 } # TODO measure

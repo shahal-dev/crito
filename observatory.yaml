@@ -1,7 +1,7 @@
-# CASSA observatory definition. One file per observatory.
+# CRITO observatory definition. One file per observatory.
 #
-# Select which file to load with CASSA_OBSERVATORY_FILE=/path/to/observatory.yaml
-# (defaults to ./observatory.yaml). Environment variables (CASSA_*) still override
+# Select which file to load with CRITO_OBSERVATORY_FILE=/path/to/observatory.yaml
+# (defaults to ./observatory.yaml). Environment variables (CRITO_*) still override
 # anything here, so a deploy-time setting is never silently shadowed by this file.
 #
 # The `location` block is operationally important: it is pushed to the mount's
@@ -10,13 +10,13 @@
 
 id: iub-dhaka
 name: IUB Rooftop Observatory
-observer: CASSA
-instrument_id: cassa-main
+observer: CRITO
+instrument_id: crito-main
 status: online                 # online | maintenance | offline (shown on the dashboard)
 
 # --- Site conditions ---------------------------------------------------------
 # Live weather (condition/humidity/temperature/wind/cloud/rain) comes from the
-# weather API (CASSA_WEATHER_API, default open-meteo) or an INDI weather device —
+# weather API (CRITO_WEATHER_API, default open-meteo) or an INDI weather device —
 # NOT from here. Only `seeing` is a manual value (no live source; needs a DIMM).
 # Remove this block entirely if you have no seeing estimate.
 weather:
@@ -27,7 +27,7 @@ weather:
 # dashboard connects this site's backend to that telescope.
 telescopes:
   - id: eq6r
-    name: EQ6-R Pro + ToupTek G3M662M
+    name: EQ6-R Pro + QHY miniCAM8
     indi:
       host: localhost
       port: 7624
@@ -61,21 +61,23 @@ equipment:
     baud: 115200
 
   telescope:
-    name: null                 # TODO: optical tube
-    aperture_mm: null
-    focal_length_mm: null
+    name: Sky-Watcher Explorer 200P
+    aperture_mm: 200
+    focal_length_mm: 1000      # f/5 parabolic Newtonian
 
   cameras:
-    - role: camera             # science camera
+    - role: camera             # science camera (primary)
+      name: QHY MiniCam8
+      indi_device: QHY CCD QHYminiCam8   # TODO: confirm exact label via Scan
+      driver: indi_qhy_ccd
+      sensor: Sony IMX585
+      pixel_size_um: 2.9
+    - role: guide              # guide camera
       name: ToupTek G3M662M
       indi_device: ToupTek G3M662M
       driver: indi_toupcam_ccd
       sensor: Sony IMX662
       pixel_size_um: 2.9       # TODO: verify
-    - role: guide              # guide camera
-      name: QHY MiniCam8
-      indi_device: QHY CCD QHYminiCam8   # TODO: confirm exact label via Scan
-      driver: indi_qhy_ccd
 
   focuser:
     name: ToupTek AAF
@@ -86,3 +88,29 @@ equipment:
     name: QHY MiniCam8 integrated wheel
     driver: indi_qhy_ccd
     filters: []                # TODO: slot labels in order, e.g. [L, R, G, B]
+
+# --- Exposure-planner setups (optical trains) -------------------------------
+# Named OTA + camera (+ reducer/barlow) combinations. Selecting one in the
+# Exposure tab auto-fills focal length + pixel size (manual edits still allowed).
+# Add a `calibration_file:` to point a setup at its own measured sensor table;
+# omit it to plan that setup with manual constants. Delete this block to fall back
+# to a single setup synthesized from `equipment` above.
+setups:
+  - id: 200p-minicam8
+    name: 200P + miniCAM8 (native f/5)
+    focal_length_mm: 1000
+    pixel_size_um: 2.9
+    camera: QHY MiniCam8
+    calibration_file: calibration/minicam8.example.yaml   # TODO: swap for your measured table
+  - id: 200p-minicam8-reducer
+    name: 200P + miniCAM8 + 0.5× reducer
+    focal_length_mm: 500
+    pixel_size_um: 2.9
+    camera: QHY MiniCam8
+    calibration_file: calibration/minicam8.example.yaml
+  - id: 200p-touptek
+    name: 200P + ToupTek G3M662M
+    focal_length_mm: 1000
+    pixel_size_um: 2.9
+    camera: ToupTek G3M662M
+    # no calibration_file yet → this setup plans with manual constants

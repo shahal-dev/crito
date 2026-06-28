@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cassa.dal.indi.protocol import INDIClient  # noqa: E402
+from crito.dal.indi.protocol import INDIClient  # noqa: E402
 
 
 def _client() -> INDIClient:

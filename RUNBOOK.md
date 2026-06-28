@@ -1,4 +1,4 @@
-# CASSA — Runbook (get it operational, step by step)
+# CRITO — Runbook (get it operational, step by step)
 
 Everything we've built so far (Phases 0–1 + runtime device connection), driving
 your **real instruments** over INDI. Devices are discovered by **Scan** and bound
@@ -6,14 +6,14 @@ to roles from the console — no hardcoded device map, any INDI-supported brand.
 
 ### Two machines (who does what)
 
-CASSA runs across **two roles**. They can be the same physical box (everything on
+CRITO runs across **two roles**. They can be the same physical box (everything on
 one Linux machine next to the telescope) or two boxes on the same network — the
 steps below tell you which role each command belongs to.
 
 | Role | What it is | Runs here | Installs needed |
 |------|-----------|-----------|-----------------|
 | 🛰️ **EDGE NODE** | The Linux box **physically cabled to the instruments** (mount, cameras, focuser, wheel) | the **INDI server** (`indiserver` + your real drivers) | `indi-full` + vendor driver pkgs (step **1c**) |
-| 💻 **WORKSTATION** | Where you sit and operate from (laptop/desktop) | the **backend API** + the **web console** | Python venv + CASSA (step **1a**), Node + web deps (step **1b**) |
+| 💻 **WORKSTATION** | Where you sit and operate from (laptop/desktop) | the **backend API** + the **web console** | Python venv + CRITO (step **1a**), Node + web deps (step **1b**) |
 
 > **Single-machine setup?** If the instruments are plugged straight into your
 > workstation, that one box is *both* roles — run **all** steps on it and use
@@ -49,21 +49,21 @@ driver packages for your hardware (installed in step **1c**).
 
 ### 1a. Python backend &nbsp;— 💻 WORKSTATION
 ```bash
-cd ~/Desktop/cassa
+cd ~/Desktop/crito
 
 # create + activate a virtualenv (reuse your existing .cassatom if you have it)
 python3 -m venv .venv
 source .venv/bin/activate
 #   (if reusing the one you already made:  source .cassatom/bin/activate )
 
-# install CASSA and its dependencies
+# install CRITO and its dependencies
 pip install --upgrade pip
 pip install -e .
 ```
 
 ### 1b. Web console &nbsp;— 💻 WORKSTATION
 ```bash
-cd ~/Desktop/cassa/web
+cd ~/Desktop/crito/web
 npm install
 cd ..
 ```
@@ -103,23 +103,23 @@ Leave it running. If you're not sure which drivers match your gear, the KStars/E
 
 ### Terminal 2 &nbsp;— 💻 WORKSTATION — backend API
 ```bash
-cd ~/Desktop/cassa
+cd ~/Desktop/crito
 source .venv/bin/activate         # or: source .cassatom/bin/activate
 
-# point CASSA at the edge node's INDI server.
+# point CRITO at the edge node's INDI server.
 # single-machine setup? skip these two lines — localhost:7624 is the default.
-export CASSA_INDI_HOST=192.168.1.50      # the edge node's address
-export CASSA_INDI_PORT=7624
+export CRITO_INDI_HOST=192.168.1.50      # the edge node's address
+export CRITO_INDI_PORT=7624
 
-uvicorn cassa.core.app:app --reload --reload-dir cassa --host 0.0.0.0 --port 8000
+uvicorn crito.core.app:app --reload --reload-dir crito --host 0.0.0.0 --port 8000
 ```
-You should see `CASSA core ready — INDI <host>:7624` and `INDI transport up`.
+You should see `CRITO core ready — INDI <host>:7624` and `INDI transport up`.
 (On first run it creates `data/` with the SQLite archive.) You can also leave the
 host unset and set it later from the console (**Connect server**).
 
 ### Terminal 3 &nbsp;— 💻 WORKSTATION — web console
 ```bash
-cd ~/Desktop/cassa/web
+cd ~/Desktop/crito/web
 npm run dev
 ```
 Open the printed URL: **http://localhost:5173**
@@ -163,7 +163,7 @@ curl "localhost:8000/api/images?limit=5"        # archive index
 ## 5. Retrieve images over SFTP/FTP (optional, needs Docker) &nbsp;— 💻 WORKSTATION
 ```bash
 docker compose -f deploy/docker-compose.yml --profile ftp up -d
-# open http://localhost:8082  (admin / cassa-admin), create an SFTP user whose
+# open http://localhost:8082  (admin / crito-admin), create an SFTP user whose
 # home folder maps to /srv/archive, then:
 sftp -P 2022 <user>@localhost      # browse raw/  previews/  thumbs/
 ```
@@ -201,7 +201,7 @@ make web         # run the console (http://localhost:5173)
 make infra       # postgres/redis/nats/minio (later phases)
 ```
 The INDI server runs on the edge node with your real drivers (step 2, Terminal 1);
-point `CASSA_INDI_HOST`/`CASSA_INDI_PORT` at it or set it from the console.
+point `CRITO_INDI_HOST`/`CRITO_INDI_PORT` at it or set it from the console.
 
 ---
 
@@ -237,29 +237,29 @@ The console has three tabs (top-right): **Console** (manual control + archive),
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `CASSA_ALT_MIN_DEG` | `30` | horizon altitude limit (observability tag, not a filter) |
-| `CASSA_ALERCE_CLASSIFIER` | `stamp_classifier` | ALeRCE classifier (labels fresh alerts). `""` = plain recent objects, class "unknown" |
-| `CASSA_ALERCE_CLASSES` | `SN,AGN,VS` | classes to pull (per-class query). `""` = no class filter |
-| `CASSA_ALERCE_PROBABILITY` | `0.4` | min classifier probability — **lower this to see more** |
-| `CASSA_ALERCE_LOOKBACK_DAYS` | `7` | only ingest objects active within N days |
-| `CASSA_ALERCE_POLL_S` | `600` | broker poll cadence (s) |
-| `CASSA_DEFAULT_EXPTIME_S` / `CASSA_DEFAULT_COUNT` | `120` / `5` | default recipe per target |
-| `CASSA_AUTO_EXECUTE` | `false` | master switch for unattended auto-dispatch — **keep off until a weather/safety system exists** |
+| `CRITO_ALT_MIN_DEG` | `30` | horizon altitude limit (observability tag, not a filter) |
+| `CRITO_ALERCE_CLASSIFIER` | `stamp_classifier` | ALeRCE classifier (labels fresh alerts). `""` = plain recent objects, class "unknown" |
+| `CRITO_ALERCE_CLASSES` | `SN,AGN,VS` | classes to pull (per-class query). `""` = no class filter |
+| `CRITO_ALERCE_PROBABILITY` | `0.4` | min classifier probability — **lower this to see more** |
+| `CRITO_ALERCE_LOOKBACK_DAYS` | `7` | only ingest objects active within N days |
+| `CRITO_ALERCE_POLL_S` | `600` | broker poll cadence (s) |
+| `CRITO_DEFAULT_EXPTIME_S` / `CRITO_DEFAULT_COUNT` | `120` / `5` | default recipe per target |
+| `CRITO_AUTO_EXECUTE` | `false` | master switch for unattended auto-dispatch — **keep off until a weather/safety system exists** |
 
 > The pipeline queries the **stamp classifier** per class (so each object gets a real
 > SN/AGN/VS label) and **automatically falls back** to a plain recent-objects query if
 > that returns nothing — so the feed is never silently empty. If you still see nothing,
-> the broker returned zero rows: lower `CASSA_ALERCE_PROBABILITY`, widen
-> `CASSA_ALERCE_LOOKBACK_DAYS`, or set `CASSA_ALERCE_CLASSIFIER=` (empty) and re-poll.
+> the broker returned zero rows: lower `CRITO_ALERCE_PROBABILITY`, widen
+> `CRITO_ALERCE_LOOKBACK_DAYS`, or set `CRITO_ALERCE_CLASSIFIER=` (empty) and re-poll.
 
 > **Approve→Execute vs auto-execute:** *Execute* marks a request `auto`, but it only
-> runs unattended when `CASSA_AUTO_EXECUTE=true`. With the default (`false`) it simply
+> runs unattended when `CRITO_AUTO_EXECUTE=true`. With the default (`false`) it simply
 > waits in the queue for a manual **Launch** — the safe default given there's no
 > weather/safety automation yet.
 
-**Slack / email approval** (optional, currently dormant): set `CASSA_SLACK_BOT_TOKEN`,
-`CASSA_SLACK_APP_TOKEN` (Socket Mode), `CASSA_SLACK_CHANNEL` and/or `CASSA_SMTP_*` +
-`CASSA_APPROVE_SECRET` to also post interactive approval cards to Slack / email. Left
+**Slack / email approval** (optional, currently dormant): set `CRITO_SLACK_BOT_TOKEN`,
+`CRITO_SLACK_APP_TOKEN` (Socket Mode), `CRITO_SLACK_CHANNEL` and/or `CRITO_SMTP_*` +
+`CRITO_APPROVE_SECRET` to also post interactive approval cards to Slack / email. Left
 unset, the console is the sole approval surface.
 
 **Quick API check:**
@@ -273,7 +273,7 @@ curl "localhost:8000/api/transient/candidates?group_by=class" # observable candi
 
 ## 10. Guiding with PHD2
 
-CASSA reads PHD2's live guiding error and plots it (RA + Dec, in pixels) in the
+CRITO reads PHD2's live guiding error and plots it (RA + Dec, in pixels) in the
 **Auto Guider** panel on the Console, and can start/stop guiding.
 
 ### 10a. Install PHD2 &nbsp;— 🛰️ EDGE NODE
@@ -289,13 +289,13 @@ sudo apt install -y phd2
 3. **Calibrate** once near the celestial equator (Dec ≈ 0): pick a star, run PHD2
    calibration, and confirm the guide pulses move it the right way.
 4. **Tools → Enable Server** — PHD2's event server on TCP **4400**. This is what
-   CASSA connects to.
+   CRITO connects to.
 
-### 10c. Point CASSA at PHD2 &nbsp;— 💻 WORKSTATION
+### 10c. Point CRITO at PHD2 &nbsp;— 💻 WORKSTATION
 PHD2's server runs on the edge node, so set its host (defaults to the INDI host):
 ```bash
-export CASSA_PHD2_HOST=192.168.1.50   # edge node; omit to reuse CASSA_INDI_HOST
-export CASSA_PHD2_PORT=4400           # default
+export CRITO_PHD2_HOST=192.168.1.50   # edge node; omit to reuse CRITO_INDI_HOST
+export CRITO_PHD2_PORT=4400           # default
 ```
 Restart the backend. The **Auto Guider** panel shows **PHD2 &lt;state&gt;** when connected.
 
@@ -307,7 +307,7 @@ Restart the backend. The **Auto Guider** panel shows **PHD2 &lt;state&gt;** when
 
 | Symptom | Fix |
 |--------|-----|
-| Panel shows **PHD2 disconnected** | PHD2 not running, server not enabled, or wrong host — start PHD2, **Tools → Enable Server**, set `CASSA_PHD2_HOST`. |
+| Panel shows **PHD2 disconnected** | PHD2 not running, server not enabled, or wrong host — start PHD2, **Tools → Enable Server**, set `CRITO_PHD2_HOST`. |
 | Plot empty but connected | PHD2 isn't guiding/looping yet — select a star and Start guiding. |
 | **Start guiding** returns 503 | PHD2 not connected to equipment or not calibrated — do that in PHD2 first. |
 
@@ -315,19 +315,19 @@ Restart the backend. The **Auto Guider** panel shows **PHD2 &lt;state&gt;** when
 
 ## 11. Weather & safety
 
-CASSA runs a **safety state machine** that gates unattended/auto operation. States:
+CRITO runs a **safety state machine** that gates unattended/auto operation. States:
 **SAFE → WARN → UNSAFE → FAULT**. UNSAFE/FAULT trip immediately (fail-fast); returning
-to SAFE needs conditions to hold OK for `CASSA_SAFETY_CLEAR_DELAY_S` (hysteresis).
+to SAFE needs conditions to hold OK for `CRITO_SAFETY_CLEAR_DELAY_S` (hysteresis).
 
 **On UNSAFE/FAULT** the monitor **aborts the running sequence and parks the mount**.
 **Auto-execute requires SAFE**; an attended launch is blocked only when UNSAFE/FAULT.
 A banner on the Console shows the state, reasons, and weather; the header shows a pill.
 
 ### Feeding weather — three ways
-1. **Weather API (default, on)** — CASSA auto-polls a weather API for the site's
-   lat/lon and feeds the safety monitor. Provider `CASSA_WEATHER_API`: **`open-meteo`**
-   (free, no key — the default), `openweather` (needs `CASSA_WEATHER_API_KEY`), or `""`
-   to disable. Cadence `CASSA_WEATHER_POLL_S` (600 s). ⚠ A regional API is **coarse** —
+1. **Weather API (default, on)** — CRITO auto-polls a weather API for the site's
+   lat/lon and feeds the safety monitor. Provider `CRITO_WEATHER_API`: **`open-meteo`**
+   (free, no key — the default), `openweather` (needs `CRITO_WEATHER_API_KEY`), or `""`
+   to disable. Cadence `CRITO_WEATHER_POLL_S` (600 s). ⚠ A regional API is **coarse** —
    it won't catch a local cloud/shower over the dome; pair it with an on-site sensor (3).
 2. **Push (any source)** — a sensor script POSTs readings directly:
    ```bash
@@ -335,7 +335,7 @@ A banner on the Console shows the state, reasons, and weather; the header shows 
      -H 'content-type: application/json' \
      -d '{"humidity":72,"wind_speed":12,"rain":false,"clouds":20}'
    ```
-3. **INDI weather device** — set `CASSA_WEATHER_DEVICE="<label>"` and CASSA reads its
+3. **INDI weather device** — set `CRITO_WEATHER_DEVICE="<label>"` and CRITO reads its
    `WEATHER_STATUS` (Ok/Busy/Alert) + parameters directly. **Takes priority** over the
    API (a real on-site sensor beats a regional forecast).
 
@@ -345,12 +345,12 @@ blocking unattended observing until real conditions arrive.
 ### Thresholds (env, defaults)
 | Var | Default | |
 |-----|---------|--|
-| `CASSA_SAFETY_ENABLED` | `true` | enforce the FSM |
-| `CASSA_SAFETY_STALE_S` | `180` | weather older than this → UNSAFE |
-| `CASSA_SAFETY_CLEAR_DELAY_S` | `120` | hold OK this long before SAFE |
-| `CASSA_SAFETY_HUMIDITY_WARN` / `_UNSAFE` | `85` / `95` | % |
-| `CASSA_SAFETY_WIND_UNSAFE` | `40` | km/h |
-| `CASSA_SAFETY_CLOUD_UNSAFE` | `90` | % (if the source reports it) |
+| `CRITO_SAFETY_ENABLED` | `true` | enforce the FSM |
+| `CRITO_SAFETY_STALE_S` | `180` | weather older than this → UNSAFE |
+| `CRITO_SAFETY_CLEAR_DELAY_S` | `120` | hold OK this long before SAFE |
+| `CRITO_SAFETY_HUMIDITY_WARN` / `_UNSAFE` | `85` / `95` | % |
+| `CRITO_SAFETY_WIND_UNSAFE` | `40` | km/h |
+| `CRITO_SAFETY_CLOUD_UNSAFE` | `90` | % (if the source reports it) |
 
 ### Operator controls (Console banner)
 - **Emergency stop** — latches FAULT, aborts + parks. **Clear e-stop** to release.
@@ -365,38 +365,38 @@ blocking unattended observing until real conditions arrive.
 
 ## 12. Plate-solving & autofocus (ASTAP)
 
-CASSA uses **ASTAP** for both plate-solving (pointing) and HFR autofocus. Install it
-on each edge node and point CASSA at it.
+CRITO uses **ASTAP** for both plate-solving (pointing) and HFR autofocus. Install it
+on each edge node and point CRITO at it.
 
 ### Install on the edge node (Pi/mini-PC)
-1. Install the ASTAP CLI (`astap` on PATH, or set `CASSA_ASTAP_PATH`).
+1. Install the ASTAP CLI (`astap` on PATH, or set `CRITO_ASTAP_PATH`).
 2. Install a **star database** — the **H18** (or **D80**) database is a good all-round
-   choice; ASTAP finds it automatically in its data dir, or set `CASSA_SOLVE_DB`.
+   choice; ASTAP finds it automatically in its data dir, or set `CRITO_SOLVE_DB`.
 3. Set the **focal length** in `observatory.yaml` →
    `equipment.telescope.focal_length_mm` (and the camera `pixel_size_um`). This lets
-   CASSA pass a tight FOV hint so solves are fast. Without it ASTAP auto-detects FOV
+   CRITO pass a tight FOV hint so solves are fast. Without it ASTAP auto-detects FOV
    (slower but still works).
 
 Quick check on the Pi:  `astap -f some-frame.fits -r 30`  → should print `PLTSOLVD=T`.
 
 ### Plate-solve & center
-**Console → Lookup & Target → "Solve & center".** CASSA captures a short frame,
-solves it, and if the pointing is off by more than `CASSA_CENTER_TOLERANCE_ARCSEC`
+**Console → Lookup & Target → "Solve & center".** CRITO captures a short frame,
+solves it, and if the pointing is off by more than `CRITO_CENTER_TOLERANCE_ARCSEC`
 (30″) it **syncs** the mount to the solved position and **re-slews** to target,
-iterating up to `CASSA_CENTER_MAX_ITER` times. Progress shows under the button and
+iterating up to `CRITO_CENTER_MAX_ITER` times. Progress shows under the button and
 in the activity log. In a plan, tick **Center** to insert this step after the slew.
 
-Optional **WCS injection:** `CASSA_SOLVE_SCIENCE_FRAMES=true` solves *every* LIGHT
+Optional **WCS injection:** `CRITO_SOLVE_SCIENCE_FRAMES=true` solves *every* LIGHT
 frame and writes a TAN WCS into its FITS header (slower — one solve per frame).
 
 ### Autofocus (HFR V-curve)
-**Console → Filter & Focuser → "Autofocus".** CASSA sweeps the focuser
-(`CASSA_AF_STEPS` samples, `CASSA_AF_STEP_SIZE` apart), measures median HFR per step
+**Console → Filter & Focuser → "Autofocus".** CRITO sweeps the focuser
+(`CRITO_AF_STEPS` samples, `CRITO_AF_STEP_SIZE` apart), measures median HFR per step
 with ASTAP, fits a parabola, and moves to the minimum (final approach always from one
 side to absorb backlash). A **V-curve plot** appears live. In a plan, tick
-**Autofocus** to insert this step. Needs ≥ `CASSA_AF_MIN_STARS` stars to trust a sample.
+**Autofocus** to insert this step. Needs ≥ `CRITO_AF_MIN_STARS` stars to trust a sample.
 
-> Set `CASSA_SOLVER=none` to disable both (the Center/Autofocus buttons grey out and
+> Set `CRITO_SOLVER=none` to disable both (the Center/Autofocus buttons grey out and
 > the plan steps are skipped). ASTAP's `-analyse` output format varies by version — if
 > HFR reads as "—", check the ASTAP version and the backend log (it prints the raw
 > output at debug level).
@@ -407,17 +407,153 @@ side to absorb backlash). A **V-curve plot** appears live. In a plan, tick
 
 Each exposure set in a plan has a **Type**: **Light / Dark / Flat / Bias** (quick-add
 buttons `+ Darks / + Flats / + Bias`). Mix them in one plan or build a calibration-only
-plan (leave the target blank → the slew is skipped). CASSA stamps the correct
+plan (leave the target blank → the slew is skipped). CRITO stamps the correct
 `IMAGETYP` and skips dithering / WCS-solving on calibration frames.
 
-- **Dark / Bias** — CASSA moves the wheel to the **opaque "dark" filter** first (the
+- **Dark / Bias** — CRITO moves the wheel to the **opaque "dark" filter** first (the
   QHY MiniCam8 has one). Auto-detected by a slot named *dark/blank/opaque*, or set
-  `CASSA_DARK_FILTER_SLOT`. Bias is forced to 0 s. *(Still cap the OTA if you have no
+  `CRITO_DARK_FILTER_SLOT`. Bias is forced to 0 s. *(Still cap the OTA if you have no
   dark filter.)*
 - **Flat** — before the first flat the sequence **pauses and prompts** ("set up your
   flat source…"). Set up your panel / twilight sky, then click **Confirm & continue**
   (on the Console or the Observe tab). Confirming also clears any manual hold you set
   while preparing. Flats honor the selected **filter**.
 
-> CASSA controls the *filter, exposure and frame type* — it does not operate a shutter,
+> CRITO controls the *filter, exposure and frame type* — it does not operate a shutter,
 > cap or flat panel. Wire a motorized flat/cap on INDI later to automate the flat setup.
+
+---
+
+## 14. Exposure planning (how long to expose for science)
+
+The **Exposure** tab (and `crito.transient.exposure`) turns a required signal-to-noise
+into a concrete plan: **sub-exposure length → number of subs → total integration
+time**, at a chosen gain. It needs the camera's *real* constants (read noise, gain,
+dark current per gain; sky rate + zero point per filter). The full theory, formulas
+and worked examples are in **`docs/exposure-planning.md`** — this section is the
+at-the-scope procedure.
+
+> The planner ships with an **example** table (`calibration/minicam8.example.yaml`)
+> of datasheet/placeholder values so it runs out of the box. Plans are only
+> *trustworthy* once you replace those with the measurements in **14b–14c**.
+
+### 14a. Set the optics / setups (one-time) &nbsp;— `observatory.yaml`
+The planner reads the plate scale from the OTA + sensor. Confirm these are set:
+```yaml
+equipment:
+  telescope: { focal_length_mm: 1000 }      # Sky-Watcher 200P (f/5)
+  cameras:
+    - role: camera
+      pixel_size_um: 2.9                     # QHY miniCAM8 / IMX585
+```
+**Multiple optical trains?** List them as **setups** — picking one in the Exposure tab
+auto-fills focal length, pixel size and the calibration table (fields stay editable):
+```yaml
+setups:
+  - id: 200p-minicam8
+    name: 200P + miniCAM8 (native f/5)
+    focal_length_mm: 1000
+    pixel_size_um: 2.9
+    calibration_file: calibration/minicam8.yaml
+  - id: 200p-minicam8-reducer
+    name: 200P + miniCAM8 + 0.5× reducer
+    focal_length_mm: 500                      # reducer changes only the focal length
+    pixel_size_um: 2.9
+    calibration_file: calibration/minicam8.yaml
+```
+(Already set for this rig.) With no `setups:` block CRITO synthesizes one from
+`equipment`. Override anything per-request with `--focal-length` / the form fields.
+
+### 14b. Characterize the camera &nbsp;— 💻 WORKSTATION
+Measures per-gain **read noise + system gain** (needs a flat source) and **dark
+current**, and writes a calibration table. Only the edge node's `indiserver` needs to
+be running (the tool opens its own INDI connection) — **avoid imaging from the console
+at the same time** so the two clients don't fight over the camera.
+
+**Physical setup:**
+- **Darks / bias:** cap the OTA (or let the wheel's opaque "dark" slot cover it).
+- **Flats:** a uniform light source (flat panel, EL panel, or twilight sky). Pick a
+  `--flat-exptime` that lands the flat at **~30–60 % of full well** (the tool warns if
+  it's out of range).
+
+```bash
+cd ~/Desktop/crito
+source .venv/bin/activate
+python -m crito.calib.characterize \
+  --device "QHY CCD QHYminiCam8" --sensor IMX585 \
+  --gains 0,60,120,200 --offset 30 --temp -10 \
+  --flat-exptime 2.0 --dark-exptimes 5,30,120 \
+  --out calibration/minicam8.yaml
+```
+(Find the exact `--device` label with the console's **Scan** — see §3.) Then:
+- **Fill `full_well_e`** for each gain from the datasheet (~54 ke⁻ at low gain) or a
+  saturation flat — the tool leaves it blank.
+- **Point CRITO at your table** and restart the backend:
+  ```bash
+  export CRITO_CALIBRATION_FILE=calibration/minicam8.yaml
+  ```
+
+> No flat source yet? Run without `--flat-exptime` to record read noise in ADU only;
+> you then need the datasheet system gain to convert to electrons. Re-run per change
+> of gain/offset/temperature — constants are specific to all three.
+
+### 14c. Measure sky rate & zero point on-sky &nbsp;— 💻 WORKSTATION
+These are site/optics/filter-specific and need real sky frames + one star of known
+magnitude, so they're **not** part of 14b. For each filter, capture a sky light frame
+and do quick aperture photometry, then compute with the analysis helpers:
+```python
+from crito.calib.analysis import load_fits_array, sky_rate, zero_point
+arr = load_fits_array("light_L.fits")           # an on-sky frame through filter L
+B  = sky_rate(arr, bias_adu=500, dark_e_per_s=0.01,
+              gain_e_per_adu=0.16, exptime_s=30) # → e-/s/px (median rejects stars)
+zp = zero_point(flux_e_per_s=1200,              # a known star's sky-subtracted flux
+                catalog_mag=11.4)               # its catalog mag in this band
+print(B, zp)
+```
+Add the results under `filters:` in the table (gain-independent, in electrons):
+```yaml
+filters:
+  L: { sky_e_per_s_per_px: <B>, zero_point_e: <zp> }
+```
+Measure sky for the conditions you'll observe in (it rises a lot with the moon).
+
+### 14d. Plan an exposure &nbsp;— 💻 WORKSTATION
+**Browser:** Console → **Exposure** tab. Pick a **Setup** (auto-fills focal length,
+pixel size & calibration), then enter the target **magnitude** and **required SNR**
+(presets: Detect 5σ / Photometry 1 % / …), pick **filter · gain · temperature** from
+your table (or tick **manual constants**), set **seeing**, then **Compute plan**.
+Optionally protect a bright field star (**Brightest star mag**) or cap the sub (**Max
+sub**). Any field can be edited after a setup is applied (manual inputs accepted). The
+readout gives the sub window, recommended sub, sub count × length, total integration,
+achieved SNR ± mag error, and the limiting noise.
+
+**CLI:**
+```bash
+python -m crito.transient.exposure --calibration calibration/minicam8.yaml \
+  --mag 18.5 --snr 30 --filter L --gain 120 --temp -10 --focal-length 1000 --seeing 3
+```
+
+**API:**
+```bash
+curl localhost:8000/api/tools/exposure/calibration          # gains/filters available
+curl -X POST localhost:8000/api/tools/exposure \
+  -H 'content-type: application/json' \
+  -d '{"mag":18.5,"required_snr":30,"filter":"L","gain":120,"temp_c":-10,"seeing_arcsec":3}'
+```
+Then transcribe the recommended **sub length** and **count** into a **Plan** (§13 /
+the Plan tab) to actually shoot it.
+
+### 14e. Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `focal length unknown` (400) | set `equipment.telescope.focal_length_mm` in `observatory.yaml`, or pass `--focal-length` / the form field. |
+| `calibration for gain N is incomplete` | `read_noise_e` / `full_well_e` is null — fill it (14b / datasheet). |
+| `filter 'X' not in calibration` | add it under `filters:` (14c), or use manual constants. |
+| `flat shot variance ≤ 0` during characterize | flats too dim/saturated or not flats — aim for ~30–60 % full well. |
+| Exposure tab shows "no calibration table" | `CRITO_CALIBRATION_FILE` unset/wrong — point it at your table and restart the backend. |
+| Plan wants an absurd total time | sky-limited faint broadband target — use narrowband, a brighter SNR target, more aperture, or accept lower SNR (`docs/exposure-planning.md` EX1/EX4). |
+| `saturation ceiling below sky floor` warning | bright star in a dark sky — lower the gain (more full well), smaller aperture, or accept the read-noise penalty. |
+
+> Theory, derivations, the calibration-table schema, and four worked examples:
+> **`docs/exposure-planning.md`**.

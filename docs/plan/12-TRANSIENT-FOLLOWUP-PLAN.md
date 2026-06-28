@@ -84,10 +84,10 @@ Three background tasks started in `app.py` `lifespan` next to the existing
                                    └────────────────────────────────────┘ + Archive
 ```
 
-New backend package `cassa/transient/`; new router `cassa/core/transient_routes.py`
+New backend package `crito/transient/`; new router `crito/core/transient_routes.py`
 mounted via `app.include_router(...)`.
 
-## Data model — `cassa/core/transient_db.py` (registers on the existing `Base`)
+## Data model — `crito/core/transient_db.py` (registers on the existing `Base`)
 
 Import `Base`/`_utcnow` from `db.py` so `db.init()`'s `create_all` auto-creates these
 (import the module in `app.py` lifespan before `db.init()`). String columns backed by
@@ -109,10 +109,10 @@ State enums: `CandidateState(new→notified→approved_queue\|approved_execute�
 `StepState(pending→running→done\|failed\|skipped)`.
 
 > `create_all` creates missing tables but never alters them. For dev schema changes to
-> transient tables, drop `data/cassa.db` (same as `Image` today); Alembic at the
+> transient tables, drop `data/crito.db` (same as `Image` today); Alembic at the
 > Postgres cutover.
 
-## Backend services — `cassa/transient/`
+## Backend services — `crito/transient/`
 
 - **`alerce.py` — `AlerceClient`**: async wrapper over the ALeRCE ZTF REST API
   (`https://api.alerce.online/ztf/v1`). `query_objects(...)` hits `GET /objects`
@@ -121,7 +121,7 @@ State enums: `CandidateState(new→notified→approved_queue\|approved_execute�
   shared `httpx.AsyncClient` (created in lifespan, closed in `finally`). Defensive
   normalization (missing field → null, never crash).
 - **`poller.py` — `AlertPoller.run(app)`**: background loop every
-  `CASSA_ALERCE_POLL_S` (default 600 s). Pull recent window (`CASSA_ALERCE_LOOKBACK_DAYS`),
+  `CRITO_ALERCE_POLL_S` (default 600 s). Pull recent window (`CRITO_ALERCE_LOOKBACK_DAYS`),
   upsert `Alert` rows (track high-water `lastmjd` → fetch only deltas), hand new/updated
   alerts to `CandidateService`. Try/except per cycle (like `_broadcaster`/`DeviceManager._run`),
   exponential backoff + jitter on 429/5xx.
@@ -141,21 +141,21 @@ State enums: `CandidateState(new→notified→approved_queue\|approved_execute�
 - **`approvals.py` — `ApprovalService` + `SlackBot`** and **`email_notify.py` —
   `EmailNotifier`**:
   - `SlackBot`: `slack_sdk` async **Socket Mode** client + `AsyncWebClient`, started only
-    when `CASSA_SLACK_BOT_TOKEN`(xoxb) + `CASSA_SLACK_APP_TOKEN`(xapp) are set. Posts a
-    Block Kit candidate card to `CASSA_SLACK_CHANNEL` with buttons **Approve→Queue**
+    when `CRITO_SLACK_BOT_TOKEN`(xoxb) + `CRITO_SLACK_APP_TOKEN`(xapp) are set. Posts a
+    Block Kit candidate card to `CRITO_SLACK_CHANNEL` with buttons **Approve→Queue**
     (`approve_queue`), **Approve→Execute now** (`approve_execute`), **Reject** —
     `action_id`/`value` encode `candidate_id`. Listener ACKs immediately, calls
     `CandidateService.approve/reject`, then `chat.update`s the card with the decision +
     actor. Reconnect with backoff; never crashes the app if Slack is down.
-  - `EmailNotifier`: stdlib `smtplib`/`email` (zero new dep), `CASSA_SMTP_*`. Sends a
+  - `EmailNotifier`: stdlib `smtplib`/`email` (zero new dep), `CRITO_SMTP_*`. Sends a
     candidate summary with a **signed deep-link**
     `/api/transient/approve?token=<hmac>` (stdlib `hmac`+`base64` over
-    `candidate_id|action|exp`, `CASSA_APPROVE_SECRET`) → the email/NAT-safe approval path.
+    `candidate_id|action|exp`, `CRITO_APPROVE_SECRET`) → the email/NAT-safe approval path.
   - `ApprovalService.notify(candidate)` fans out to Slack + email, sets
     `Candidate.state=notified`.
 - **`executor.py` — `ExecutionSequencer.run(app)` + queue** (below).
 
-### Lifespan wiring (`cassa/core/app.py`)
+### Lifespan wiring (`crito/core/app.py`)
 ```python
 app.state.http = httpx.AsyncClient(timeout=30)
 app.state.alerce = AlerceClient(app.state.http, settings)
@@ -174,7 +174,7 @@ app.include_router(transient_router)
 ```
 Every service degrades gracefully when its config/credentials are absent.
 
-## Visibility engine — `cassa/transient/visibility.py` (astropy only)
+## Visibility engine — `crito/transient/visibility.py` (astropy only)
 
 `EarthLocation` from `observatory.location` (IUB Dhaka 23.8138 N, 90.4246 E, +6h).
 Build once per `ut_date` (cached):
@@ -199,12 +199,12 @@ mask; ±5-min endpoint tolerance (documented; 30° has margin). All `Time`s tz-a
 the executor **re-checks observability at dispatch** — never trusts a stale window. Run
 a large candidate batch via `asyncio.to_thread` if it ever stalls the loop (>~20 ms).
 
-## Execution engine — `cassa/transient/executor.py`
+## Execution engine — `crito/transient/executor.py`
 
 Single-flight loop (one mount): pick the next runnable block, run to completion, repeat.
 - **Attended**: a block runs only when explicitly launched (`/blocks/{id}/launch`).
 - **Auto**: dispatch the highest-priority `mode=auto` block whose target is observable
-  now + inside dark window + `CASSA_AUTO_EXECUTE` on + `manual_override` clear.
+  now + inside dark window + `CRITO_AUTO_EXECUTE` on + `manual_override` clear.
 
 Per block, calling the **same async methods the manual endpoints use**:
 1. Guard: `dm.connected`, mount+camera bound, re-check observability now, override clear.
@@ -225,7 +225,7 @@ verbs `pause/resume/abort` set flags checked between steps; `abort` also calls
 `dm.mount.abort()`. Any manual device endpoint sets `manual_override=True` → the loop
 finishes the current exposure then stops auto-dispatch ("manual override always wins").
 
-## API — `cassa/core/transient_routes.py`
+## API — `crito/core/transient_routes.py`
 
 ```
 GET  /api/transient/candidates?ut_date&state&group_by=class
@@ -242,7 +242,7 @@ POST /api/transient/queue/reorder              {block_ids:[...]}
 GET  /api/transient/config | POST              # recipe defaults, weights, alt min, auto toggle
 ```
 Telemetry adds: `executor{state,block_id,object,step,n_done,total,exposure_remaining,
-manual_override}`, `queue_len`, `auto_execute`. New `CASSA_*` settings in `config.py`:
+manual_override}`, `queue_len`, `auto_execute`. New `CRITO_*` settings in `config.py`:
 `ALERCE_POLL_S`, `ALERCE_LOOKBACK_DAYS`, `ALT_MIN_DEG=30`, `SLACK_BOT_TOKEN`,
 `SLACK_APP_TOKEN`, `SLACK_CHANNEL`, `SMTP_*`, `APPROVE_SECRET`, `AUTO_EXECUTE=false`.
 

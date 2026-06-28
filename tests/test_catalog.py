@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cassa.core.catalog import get_catalog, normalize  # noqa: E402
+from crito.core.catalog import get_catalog, normalize  # noqa: E402
 
 
 def test_normalize_identifiers():

@@ -87,7 +87,7 @@ astronomy ecosystem (Astropy, astrometry.net, INDI, ASCOM Alpaca) is first-class
 
 ## 8. Repository structure (monorepo suggestion)
 ```
-cassa/
+crito/
   core/                 # FastAPI services (or modular monolith)
     api/  scheduler/  broker/  archive/  realtime/  inventory/  safety/
   agent/                # Site Agent (edge)
@@ -108,7 +108,7 @@ scratch:
 - **OCS** (LCO Observatory Control System) ideas for multi-site scheduling.
 - **NINA**/**ACP** (Windows) for feature/UX inspiration.
 
-CASSA's differentiator is the **integrated multi-site core + transient broker + manual
+CRITO's differentiator is the **integrated multi-site core + transient broker + manual
 operator console + FTP archive** tailored to IUB; reuse device-layer maturity where it
 saves time (e.g., lean on INDI/Alpaca drivers and PHD2 rather than reimplementing).
 

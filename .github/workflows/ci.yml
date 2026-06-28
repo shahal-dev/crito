@@ -18,7 +18,7 @@ jobs:
           pip install -e .
           pip install pytest
       - name: Compile check
-        run: python -m compileall cassa
+        run: python -m compileall crito
       - name: Tests
         run: pytest -q
 

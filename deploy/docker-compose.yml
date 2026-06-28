@@ -1,8 +1,8 @@
-name: cassa
+name: crito
 
 # The INDI server runs on the observatory edge node (real device drivers), not
-# here. Point CASSA_INDI_HOST/PORT at it (or set it from the console). This file
-# only provisions CASSA's own supporting infrastructure.
+# here. Point CRITO_INDI_HOST/PORT at it (or set it from the console). This file
+# only provisions CRITO's own supporting infrastructure.
 
 services:
   # --- Infrastructure for later phases. Start with: docker compose --profile infra up -d
@@ -10,9 +10,9 @@ services:
     image: timescale/timescaledb:latest-pg16
     profiles: ["infra"]
     environment:
-      POSTGRES_USER: cassa
-      POSTGRES_PASSWORD: cassa
-      POSTGRES_DB: cassa
+      POSTGRES_USER: crito
+      POSTGRES_PASSWORD: crito
+      POSTGRES_DB: crito
     ports: ["5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
 
@@ -32,14 +32,14 @@ services:
     profiles: ["infra"]
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: cassa
-      MINIO_ROOT_PASSWORD: cassa-secret
+      MINIO_ROOT_USER: crito
+      MINIO_ROOT_PASSWORD: crito-secret
     ports: ["9000:9000", "9001:9001"]
     volumes: ["miniodata:/data"]
 
   # User-facing SFTP/FTP download gateway over the archive (read-only).
   #   docker compose -f deploy/docker-compose.yml --profile ftp up -d
-  #   admin UI: http://localhost:8082  (admin / cassa-admin) -> create an SFTP user
+  #   admin UI: http://localhost:8082  (admin / crito-admin) -> create an SFTP user
   #   whose home maps to /srv/archive, then: sftp -P 2022 <user>@localhost
   sftpgo:
     image: drakkan/sftpgo:latest
@@ -49,9 +49,9 @@ services:
       - "8082:8080"   # admin web UI
     environment:
       SFTPGO_DEFAULT_ADMIN_USERNAME: admin
-      SFTPGO_DEFAULT_ADMIN_PASSWORD: cassa-admin
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: crito-admin
     volumes:
-      - "../data/store:/srv/archive:ro"   # the CASSA local object store
+      - "../data/store:/srv/archive:ro"   # the CRITO local object store
       - "sftpgodata:/var/lib/sftpgo"
 
 volumes:

@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from astropy import units as u  # noqa: E402
 
-from cassa.transient.alerce import normalize_object  # noqa: E402
-from cassa.transient.visibility import (  # noqa: E402
+from crito.transient.alerce import normalize_object  # noqa: E402
+from crito.transient.visibility import (  # noqa: E402
     compute_night,
     night_label,
     site_location,
@@ -56,7 +56,7 @@ def _alerce_settings():
 
 async def _query(items, cutoff=None):
     import httpx
-    from cassa.transient.alerce import AlerceClient
+    from crito.transient.alerce import AlerceClient
 
     def handler(request):
         assert request.url.path == "/ztf/v1/objects/"
@@ -95,7 +95,7 @@ def test_query_recent_skips_old_without_truncating():
 
 async def _run_query(handler, settings):
     import httpx
-    from cassa.transient.alerce import AlerceClient
+    from crito.transient.alerce import AlerceClient
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     objs = await AlerceClient(client, settings).query_recent()
     await client.aclose()
@@ -196,9 +196,9 @@ def _settings():
 
 
 async def _run_eval(tmp_path):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401 — register tables
-    from cassa.transient.candidates import CandidateService
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401 — register tables
+    from crito.transient.candidates import CandidateService
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/t.db")
     await db.init()
@@ -242,9 +242,9 @@ def test_candidate_evaluation_shows_all_and_tags_observable(tmp_path):
 
 
 async def _run_approve(tmp_path, action):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401
-    from cassa.transient.candidates import CandidateService
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401
+    from crito.transient.candidates import CandidateService
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/a.db")
     await db.init()
@@ -288,10 +288,10 @@ def test_reject_transition_and_audit(tmp_path):
 
 # --------------------------------------------------- request builder / queue
 async def _run_build(tmp_path, action):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401
-    from cassa.transient.candidates import CandidateService
-    from cassa.transient.requests import RequestBuilder
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401
+    from crito.transient.candidates import CandidateService
+    from crito.transient.requests import RequestBuilder
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/b.db")
     await db.init()
@@ -378,11 +378,11 @@ class _FakeArchive:
 
 
 async def _run_executor(tmp_path, fail_slew=False):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401
-    from cassa.core.transient_db import ExecutionBlock, ExecutionStep
-    from cassa.transient.executor import ExecutionSequencer
-    from cassa.transient.requests import RequestBuilder
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401
+    from crito.core.transient_db import ExecutionBlock, ExecutionStep
+    from crito.transient.executor import ExecutionSequencer
+    from crito.transient.requests import RequestBuilder
     from sqlalchemy import select as _select
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/e.db")
@@ -435,10 +435,10 @@ def test_sequencer_aborts_on_slew_failure(tmp_path):
 
 # ----------------------------------------------------- auto-execute gating
 async def _next_runnable(tmp_path, *, auto_execute, override=False, window="now"):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401
-    from cassa.transient.executor import ExecutionSequencer
-    from cassa.transient.requests import RequestBuilder
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401
+    from crito.transient.executor import ExecutionSequencer
+    from crito.transient.requests import RequestBuilder
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/g.db")
     await db.init()
@@ -480,14 +480,14 @@ def test_auto_dispatch_respects_window(tmp_path):
 
 # ------------------------------------------------------ approval (Slack/email)
 def test_sign_verify_token_roundtrip():
-    from cassa.transient.approvals import sign_token, verify_token
+    from crito.transient.approvals import sign_token, verify_token
     tok = sign_token("ZTF_x_20260618", "execute", "s3cret")
     assert verify_token(tok, "s3cret") == ("ZTF_x_20260618", "execute")
 
 
 def test_verify_token_rejects_tampering_and_wrong_secret():
     import pytest
-    from cassa.transient.approvals import sign_token, verify_token
+    from crito.transient.approvals import sign_token, verify_token
     tok = sign_token("C1", "queue", "s3cret")
     with pytest.raises(ValueError):
         verify_token(tok, "wrong-secret")
@@ -499,7 +499,7 @@ def test_verify_token_rejects_tampering_and_wrong_secret():
 
 
 def test_slack_blocks_have_three_decision_buttons():
-    from cassa.transient.approvals import ApprovalService
+    from crito.transient.approvals import ApprovalService
     svc = ApprovalService(_settings())
     cand = {"id": "ZTF_x_20260618", "alert_id": "ZTF_x", "class_label": "SN",
             "class_prob": 0.9, "ra_deg": 150.0, "dec_deg": 24.0, "mag": 17.0,
@@ -514,9 +514,9 @@ def test_slack_blocks_have_three_decision_buttons():
 
 
 async def _plan_setup(tmp_path):
-    from cassa.core.db import DB
-    from cassa.core import transient_db  # noqa: F401
-    from cassa.transient.plans import PlanService
+    from crito.core.db import DB
+    from crito.core import transient_db  # noqa: F401
+    from crito.transient.plans import PlanService
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/p.db")
     await db.init()
@@ -524,7 +524,7 @@ async def _plan_setup(tmp_path):
 
 
 async def _run_plan_flow(tmp_path):
-    from cassa.core.transient_db import ExecutionStep
+    from crito.core.transient_db import ExecutionStep
     from sqlalchemy import select as _select
 
     db, ps = await _plan_setup(tmp_path)
@@ -559,7 +559,7 @@ def test_plan_save_and_expand(tmp_path):
 
 
 async def _run_resume(tmp_path):
-    from cassa.core.transient_db import BlockState, ExecutionBlock, ExecutionStep, StepState
+    from crito.core.transient_db import BlockState, ExecutionBlock, ExecutionStep, StepState
     from sqlalchemy import select as _select
 
     db, ps = await _plan_setup(tmp_path)
@@ -600,7 +600,7 @@ def test_plan_resume_rearms_incomplete_block(tmp_path):
 
 def test_notify_is_noop_without_channels():
     # no Slack tokens, no SMTP configured → notify must not raise
-    from cassa.transient.approvals import ApprovalService
+    from crito.transient.approvals import ApprovalService
     s = _settings()
     s.slack_bot_token = s.slack_app_token = s.slack_channel = ""
     s.smtp_host = s.smtp_to = ""

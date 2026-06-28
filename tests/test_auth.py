@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cassa.core.auth import (  # noqa: E402
+from crito.core.auth import (  # noqa: E402
     AuthService,
     decode_token,
     hash_password,
@@ -43,7 +43,7 @@ def test_role_hierarchy():
 
 
 async def _flow(tmp_path):
-    from cassa.core.db import DB
+    from crito.core.db import DB
 
     db = DB(f"sqlite+aiosqlite:///{tmp_path}/u.db")
     await db.init()

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cassa.agent.safety import SafetyMonitor  # noqa: E402
+from crito.agent.safety import SafetyMonitor  # noqa: E402
 
 
 def _mon(**override):

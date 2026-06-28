@@ -199,7 +199,7 @@ export default function Candidates() {
         r.error
           ? `Poll failed: ${r.error}`
           : `Fetched ${r.fetched} alert${r.fetched === 1 ? "" : "s"} · ${r.observable} observable tonight` +
-              (r.fetched === 0 ? " — broker returned nothing; try lowering CASSA_ALERCE_PROBABILITY" : "")
+              (r.fetched === 0 ? " — broker returned nothing; try lowering CRITO_ALERCE_PROBABILITY" : "")
       );
       await refresh();
     } catch (e) {

@@ -216,7 +216,7 @@ export default function LiveControl({
               <button className="active" disabled={!coordsValid} onClick={() => call(() => post("/api/mount/slew", { ra_hours: parseFloat(ra), dec_deg: parseFloat(dec), track: true }))}>Slew to target</button>
               <button disabled={!coordsValid} onClick={() => call(() => post("/api/mount/sync", { ra_hours: parseFloat(ra), dec_deg: parseFloat(dec) }))}>Sync</button>
               <button disabled={!coordsValid || prec?.busy || prec?.enabled === false}
-                      title={prec?.enabled === false ? "solver disabled (CASSA_SOLVER)" : "plate-solve & center on target"}
+                      title={prec?.enabled === false ? "solver disabled (CRITO_SOLVER)" : "plate-solve & center on target"}
                       onClick={() => call(() => post("/api/center", { ra_hours: parseFloat(ra), dec_deg: parseFloat(dec) }))}>
                 {prec?.center?.running ? "Solving…" : "Solve & center"}
               </button>
@@ -250,7 +250,7 @@ export default function LiveControl({
               <button disabled={!f?.connected} onClick={() => call(() => post("/api/focuser/rel", { steps: 100, inward: false }))}>+100</button>
               <button className={prec?.autofocus?.running ? "active" : ""}
                       disabled={!f?.connected || prec?.busy || prec?.enabled === false}
-                      title={prec?.enabled === false ? "solver disabled (CASSA_SOLVER)" : "HFR V-curve autofocus"}
+                      title={prec?.enabled === false ? "solver disabled (CRITO_SOLVER)" : "HFR V-curve autofocus"}
                       onClick={() => call(() => post("/api/focuser/autofocus"))}>
                 {prec?.autofocus?.running ? "Focusing…" : "Autofocus"}
               </button>

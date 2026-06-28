@@ -1,7 +1,7 @@
 [project]
-name = "cassa"
+name = "crito"
 version = "0.0.1"
-description = "CASSA — multi-site telescope/dome control system (Phase 0)"
+description = "CRITO — multi-site telescope/dome control system (Phase 0)"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
@@ -23,7 +23,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["cassa*"]
+include = ["crito*"]
 
 [tool.setuptools.package-data]
-cassa = ["data/*.tsv"]
+crito = ["data/*.tsv"]
